@@ -6,7 +6,7 @@
 #define SC_S 0x1F
 #define SC_D 0x20
 #define SC_SPACE 0x39
-
+#define SC_ENTER 0x1C
 
 void init_keyboard();
 void set_keyboard_callback(void (*callback)(uint8 scancode, char* ascii, uint8 released));

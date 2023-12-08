@@ -76,3 +76,26 @@ void memset(uint8* dest, uint8 byte, uint32 size)
     for (uint8* i = dest; i < dest + size; i++)
         *i = byte;
 }
+
+static unsigned long int next = 0;
+
+uint32 rand()
+{
+    next = next * 1103515245 + 12345;
+    return (unsigned int) (next / 65536) % 32768;
+}
+
+void srand(uint32 seed)
+{
+    next = seed;
+}
+
+float rand_float(float f1, float f2)
+{
+    return f1 + ((float)rand() / RAND_MAX * (f2 - f1));
+}
+
+uint32 rand_int(uint32 a, uint32 b)
+{
+    return a + rand() % (b - a + 1); 
+}

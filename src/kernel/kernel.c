@@ -6,8 +6,7 @@
 #include "interrupts/irq.h"
 #include "drivers/timer.h"
 #include "drivers/keyboard.h"
-
-char* str = "";
+#include "game_logic/game.h"
 
 static void timer_callback();
 static void kb_callback(uint8 scancode, char* ascii, uint8 released);
@@ -24,27 +23,18 @@ void kmain()
     set_keyboard_callback(kb_callback);
     init_keyboard();
     malloc_init();
+    srand(trand());
+    game_init();
     
-    uint32 i = 0;
     while (1)
     {
         uint32 start_tick = tick;
 
         clearScreen(0x00);
-
-        if (key_none(72)) 
-            str = "None";
-        if (key_press(72)) 
-            str = "Press";
-        if (key_release(72)) 
-            str = "Release";
-        if (key_repeat(72)) 
-            str = "Repeat";
+        game_input();
         update_key_flags();
-
-        putString(0, 0, 0x65, "Ticks: %d\n\rKeyPressed: %s", i, str);
-        drawFillRect(30, 60, 30, 20, 0x65);
-        i++;
+        game_logic();
+        game_graphics();
         flip();
 
         uint32 end_tick = tick;
