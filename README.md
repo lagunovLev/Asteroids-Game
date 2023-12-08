@@ -6,3 +6,4 @@ How to build it:
 4) Install make
 5) Install nasm
 6) Install qemu
+7) In root directory type "make"
