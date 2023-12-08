@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
     sectors_number_position = (buffer[3] << 8) + buffer[2] - 0x7c00;
     
     buffer[sectors_number_position] = round_to_sectors(buffer_ex.size()) / 512; 
+    cout << "Kernel size: " << round_to_sectors(buffer_ex.size()) / 512 << endl;
     
     MBR mbr = {
         .boot_code = { 0 },
