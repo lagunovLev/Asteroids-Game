@@ -1,4 +1,4 @@
-# Template
+# Boilerplate
 How to build it:
 1) Install wsl
 2) Install cross compiler using script
