@@ -18,11 +18,11 @@ void kmain()
     isrs_install();
     irq_install();
     asm volatile("sti");
+    malloc_init();
     set_timer_callback(timer_callback);
     init_timer(50);
     set_keyboard_callback(kb_callback);
     init_keyboard();
-    malloc_init();
     srand(trand());
     game_init();
     

@@ -24,8 +24,8 @@ const char* exception_messages[] =
 	"Coprocessor Fault",
 	"Alignment Check",
 	"Machine Check",
-	"Reserved",
-	"Reserved",
+	"Freeing up already freed\n\rmemory", // 19
+	"Memory is full. Unable to\n\rallocate new memory", // 20
 	"Reserved",
 	"Reserved",
 	"Reserved",
@@ -88,7 +88,7 @@ void kpanic(regs* r)
         //putString(0, 1 + char_height, 0x0C, "System halted");
 		flip();
 		asm volatile("cli");
-        while (1);
-			//asm volatile("hlt");
+        while (1)
+			asm volatile("hlt");
     }
 }

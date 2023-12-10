@@ -4,7 +4,7 @@ CC=/usr/local/i386elfgcc/bin/i386-elf-gcc
 LD=/usr/local/i386elfgcc/bin/i386-elf-ld
 
 LINKFLAGS=-T src/link.ld --oformat binary
-CFLAGS=-ffreestanding -Wall -c -fpic -fno-pie -mno-red-zone
+CFLAGS=-ffreestanding -Wall -c -ggdb3 -fpic -fno-pie -mno-red-zone
 
 all: run
 
@@ -12,7 +12,10 @@ clean:
 	wsl rm -rf build
 
 run: build_project
-	qemu-system-x86_64 -drive file=build/os.img,format=raw,index=0,media=disk 
+	qemu-system-x86_64 -debugcon stdio -drive file=build/os.img,format=raw,index=0,media=disk 
+
+debug: build_project
+	qemu-system-x86_64 -s -S -debugcon stdio -drive file=build/os.img,format=raw,index=0,media=disk 
 
 folders_src:=$(wildcard src/*/) $(wildcard src/*/*/) $(wildcard src/*/*/*/) $(wildcard src/*/*/*/*/) 
 folders_build:=$(patsubst src/%/,build/%/,$(folders_src))
