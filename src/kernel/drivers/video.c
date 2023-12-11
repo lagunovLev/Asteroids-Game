@@ -102,65 +102,73 @@ static void printString(uint32* str_offset, uint8 color, char* string)
 
 void putString(uint16 x, uint16 y, uint8 color, char* string, ...)
 {
-    uint8 percentage = 0;
+    //uint8 percentage = 0;
+    //va_list arg_ptr;
+    //va_start(arg_ptr, string);
+    //uint32 str_offset = x + y * screen_width;
+    //for (uint16 i = 0; string[i]; i++)
+    //{
+    //    if (string[i] == '\n')
+    //    {
+    //        str_offset += (char_height + 1) * screen_width;
+    //    } 
+    //    else if (string[i] == '\t')
+    //    {
+    //        str_offset += char_width * 4;
+    //    }
+    //    else if (string[i] == '\r')
+    //    {
+    //        str_offset -= str_offset % screen_width;
+    //    }
+    //    else if (string[i] == '%')
+    //    {
+    //        if (!percentage)
+    //        {
+    //            percentage = 1;
+    //            continue;
+    //        }
+    //        else {
+    //            printChar(str_offset, '%', color);
+    //            str_offset += char_width;
+    //        }
+    //    }
+    //    else if (percentage)
+    //    {
+    //        if (string[i] == 'd')
+    //        {
+    //            int32 d = va_arg(arg_ptr, int32);
+    //            char buf[32];
+    //            int_to_string(d, buf);
+    //            printString(&str_offset, color, buf);
+    //            //str_offset += strlen(buf) * char_width;
+    //        }
+    //        else if (string[i] == 's')
+    //        {
+    //            char* s = va_arg(arg_ptr, char*);
+    //            printString(&str_offset, color, s);
+    //            //str_offset += strlen(s) * char_width;
+    //        }
+    //        else 
+    //        {
+    //            printChar(str_offset, string[i], color);
+    //            str_offset += char_width;
+    //        }
+    //    }
+    //    else 
+    //    {
+    //        printChar(str_offset, string[i], color);
+    //        str_offset += char_width;
+    //    }
+    //    percentage = 0;
+    //}
+    //va_end(arg_ptr);
+
+    uint32 str_offset = x + y * screen_width;
     va_list arg_ptr;
     va_start(arg_ptr, string);
-    uint32 str_offset = x + y * screen_width;
-    for (uint16 i = 0; string[i]; i++)
-    {
-        if (string[i] == '\n')
-        {
-            str_offset += (char_height + 1) * screen_width;
-        } 
-        else if (string[i] == '\t')
-        {
-            str_offset += char_width * 4;
-        }
-        else if (string[i] == '\r')
-        {
-            str_offset -= str_offset % screen_width;
-        }
-        else if (string[i] == '%')
-        {
-            if (!percentage)
-            {
-                percentage = 1;
-                continue;
-            }
-            else {
-                printChar(str_offset, '%', color);
-                str_offset += char_width;
-            }
-        }
-        else if (percentage)
-        {
-            if (string[i] == 'd')
-            {
-                int32 d = va_arg(arg_ptr, int32);
-                char buf[32];
-                int_to_string(d, buf);
-                printString(&str_offset, color, buf);
-                //str_offset += strlen(buf) * char_width;
-            }
-            else if (string[i] == 's')
-            {
-                char* s = va_arg(arg_ptr, char*);
-                printString(&str_offset, color, s);
-                //str_offset += strlen(s) * char_width;
-            }
-            else 
-            {
-                printChar(str_offset, string[i], color);
-                str_offset += char_width;
-            }
-        }
-        else 
-        {
-            printChar(str_offset, string[i], color);
-            str_offset += char_width;
-        }
-        percentage = 0;
-    }
+    char buf[256] = { 0 };
+    vsprintf(buf, string, arg_ptr);
+    printString(&str_offset, color, buf);
     va_end(arg_ptr);
 }
 

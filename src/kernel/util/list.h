@@ -14,11 +14,12 @@ typedef struct {
 } List;
 
 List* list_new();
-void list_delete(List* list);
+void list_delete(List* list, void(*func)(void* data));
 void list_constructor(List* list);
-void list_destructor(List* list);
-void* list_get_elem(List* list, int32 index);
-void list_iter(List* list, void(*func)(void* data, uint32 index));
+void list_destructor(List* list, void(*func)(void* data));
+void* list_get(List* list, int32 index);
+list_elem* list_get_elem(List* list, int32 index);
+//void list_iter(List* list, void(*func)(void* data, uint32 index));
 void list_push_back(List* list, void* data);
 void list_push_front(List* list, void* data);
 void* list_pop_front(List* list);

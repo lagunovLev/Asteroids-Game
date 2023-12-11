@@ -4,3 +4,4 @@
 
 void dbg_putc(char c);
 void dbg_puts(char* str);
+void dbg_printf(char* format, ...);

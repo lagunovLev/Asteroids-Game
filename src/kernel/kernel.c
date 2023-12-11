@@ -12,6 +12,8 @@ static void timer_callback();
 static void kb_callback(uint8 scancode, char* ascii, uint8 released);
 static void calculate_delay(uint32 delay, uint32 start_tick, uint32 end_tick);
 
+uint8 run = 1;
+
 void kmain()
 {
     idt_install();
@@ -26,7 +28,7 @@ void kmain()
     srand(trand());
     game_init();
     
-    while (1)
+    while (run)
     {
         uint32 start_tick = tick;
 
@@ -40,6 +42,9 @@ void kmain()
         uint32 end_tick = tick;
         calculate_delay(1, start_tick, end_tick);
     }
+    game_destruct();
+    destruct_keyboard();
+    malloc_destruct();
 }
 
 static void calculate_delay(uint32 delay, uint32 start_tick, uint32 end_tick)

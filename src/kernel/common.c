@@ -1,5 +1,7 @@
 #include "common.h"
 #include "drivers/video.h"
+#include <stdarg.h>
+#include "debug.h"
 
 uint16 strlen(char* str)
 {
@@ -21,6 +23,17 @@ static uint16 number_of_digits(int32 n)
     while (abs(n) >= 10)
     {
         n /= 10;
+        i++;
+    }
+    return i;
+}
+
+static uint16 number_of_digits_hex(int32 n)
+{
+    uint16 i = 1;
+    while (abs(n) >= 16)
+    {
+        n /= 16;
         i++;
     }
     return i;
@@ -49,6 +62,32 @@ void int_to_string(int32 n, char* str)
     str[i + num_of_digits] = '\0';
 }
 
+void hex_to_string(int32 n, char* str)
+{
+    uint16 i = 0;
+    if (n < 0)
+        str[i++] = '-';
+    str[i++] = '0';
+    str[i++] = 'x';
+    n = abs(n);
+
+    uint16 num_of_digits = number_of_digits_hex(n);
+    uint32 t = n;
+    int32 g = 0;
+    for (int16 pos = i + num_of_digits - 1; pos != i - 1; pos--)
+    {
+        str[pos] = t % 16 + 48;
+        if (str[pos] > 57)
+            str[pos] += 7;
+        g = t % 16;
+        t /= 16;
+    }
+    str[i] = g + 48;
+    if (str[i] > 57)
+        str[i] += 7;
+    str[i + num_of_digits] = '\0';
+}
+
 void memcpy(uint8* dest, uint8* src, uint32 size)
 {
     for (uint32 i = 0; i < size; i++)
@@ -65,6 +104,8 @@ uint32 pages;
 uint32 page_size;
 uint32 cur_page;
 uint8 reached_limit;
+uint32 malloc_calls = 0;
+uint32 free_calls = 0;
 
 static uint8 check_free_pages(uint32 pages_occupies, uint32* next_page)
 {
@@ -115,9 +156,18 @@ void malloc_init()
     reached_limit = 0;
 }
 
+void malloc_destruct()
+{
+    if (malloc_calls > free_calls)
+        dbg_printf("More malloc calls than free calls. Memory leak");
+    if (malloc_calls < free_calls)
+        dbg_printf("More free calls than malloc calls. Memory freed multiplke times");
+}
+
 void* malloc(uint32 n)
 {
     // isOccupied - 1 byte, how many pages - 4 bytes
+    malloc_calls++;
     n += 5;
     uint32 pages_occupies = n / page_size - (n % page_size == 0 ? 1 : 0) + 1;
     uint32 start_page = find_free_pages(pages_occupies);
@@ -125,19 +175,22 @@ void* malloc(uint32 n)
     uint8* addr = heap_start + start_page * page_size;
     *addr = 1;
     *((uint32*)(addr + 1)) = pages_occupies;
+    dbg_printf("Allocating memory. Addres: %x. Pages number: %d. Start page: %d. Allocated bytes: %d\n", addr, pages_occupies, start_page, n - 5);
     return addr + 5;
 }
 
 void free(void* ptr)
 {
+    free_calls++;
     uint8* iptr = (uint8*)ptr - 5;
     uint8 is_occupied = *iptr;
+    uint32 pages_occupied = *((uint32*)(iptr + 1));
+    uint32 page_number = ((uint32)(iptr) - (uint32)(heap_start)) / page_size;
+    dbg_printf("Freeing memory. Addres: %x. Pages number: %d. Start page: %d.\n", iptr, pages_occupied, page_number);
     if (!is_occupied) {
         asm volatile("int $19");
     }
-    uint32 pages_occupied = *((uint32*)(iptr + 1));
     memset(iptr, 0, 5);
-    uint32 page_number = ((uint32)(iptr) - (uint32)(heap_start)) / page_size;
     memset((header_start + page_number), 0, pages_occupied);
 }
 
@@ -168,4 +221,78 @@ float rand_float(float f1, float f2)
 uint32 rand_int(uint32 a, uint32 b)
 {
     return a + rand() % (b - a + 1); 
+}
+
+
+void sprintf(char *s, const char *format, ...)
+{
+    va_list arg_ptr;
+    va_start(arg_ptr, format);
+    vsprintf(s, format, arg_ptr);
+    va_end(arg_ptr);
+}
+
+void vsprintf(char *s, const char *format, va_list ap)
+{
+    uint8 percentage = 0;
+    for (uint16 i = 0, j = 0; format[i]; i++)
+    {
+        if (format[i] == '%')
+        {
+            if (!percentage)
+            {
+                percentage = 1;
+                continue;
+            }
+            else {
+                s[j] = '%';
+                j++;
+            }
+        }
+        else if (percentage)
+        {
+            if (format[i] == 'd' || format[i] == 'i')
+            {
+                int32 d = va_arg(ap, int32);
+                char buf[32];
+                int_to_string(d, buf);
+                for (uint16 k = 0; buf[k]; k++)
+                {
+                    s[j] = buf[k];
+                    j++;
+                }
+            }
+            else if (format[i] == 'x')
+            {
+                int32 x = va_arg(ap, int32);
+                char buf[32];
+                hex_to_string(x, buf);
+                for (uint16 k = 0; buf[k]; k++)
+                {
+                    s[j] = buf[k];
+                    j++;
+                }
+            }
+            else if (format[i] == 's')
+            {
+                char* str = va_arg(ap, char*);
+                for (uint16 k = 0; str[k]; k++)
+                {
+                    s[j] = str[k];
+                    j++;
+                }
+            }
+            else 
+            {
+                s[j] = format[i];
+                j++;
+            }
+        }
+        else 
+        {
+            s[j] = format[i];
+            j++;
+        }
+        percentage = 0;
+    }
 }

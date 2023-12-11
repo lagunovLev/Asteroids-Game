@@ -27,6 +27,11 @@ void init_keyboard() {
     memset(second_key_flags, 0, 128);
 }
 
+void destruct_keyboard() {
+    free(key_flags);
+    free(second_key_flags);
+}
+
 void set_keyboard_callback(void (*callback)(uint8 scancode, char* ascii, uint8 released))
 {
     keyboard_callback = callback;

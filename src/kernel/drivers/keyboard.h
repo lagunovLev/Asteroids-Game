@@ -9,6 +9,7 @@
 #define SC_ENTER 0x1C
 
 void init_keyboard();
+void destruct_keyboard();
 void set_keyboard_callback(void (*callback)(uint8 scancode, char* ascii, uint8 released));
 uint8 key_released(uint8 scancode);
 void update_key_flags();
