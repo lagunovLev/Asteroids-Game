@@ -77,7 +77,7 @@ void isrs_install()
 	idt_set_gate(31, (unsigned)isr31, 0x08, 0x8E);
 }
 
-void kpanic(regs* r)
+volatile void kpanic(regs* r)
 {
     if (r->int_no < 32)
     {

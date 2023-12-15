@@ -11,6 +11,13 @@
 #include "stars.h"
 
 List asteroids;
+float asteroid_spawn_time = 50;
+
+static void spawn_asteroids()
+{
+    list_push_back(&asteroids, asteroid_new((vec){ 50, 7 }, (vec){ 0.5, -0.5 }, (vec){ 0, 0 }, 25));
+    add_event(spawn_asteroids, asteroid_spawn_time);
+}
 
 static void _draw_stars(int32 pos_x, int32 pos_y)
 {
@@ -23,7 +30,7 @@ static void _draw_stars(int32 pos_x, int32 pos_y)
     {
         for (uint32 x = x_base; x < x_limit; x++)
         {
-            uint8 star = starfield[x + y * screen_height];
+            uint8 star = starfield[x + y * screen_width];
             *((uint8*)double_buffer + x + pos_x + (y + pos_y) * screen_width) = star;
         }
     }
@@ -63,21 +70,21 @@ static void player_input()
         player.velocity.y -= sin(player.rotation_angle) * player.speed;
     }
     if (!key_none(SC_A))
-        player.rotation_angle -= 0.3;
+        player.rotation_angle -= 0.09;
     if (!key_none(SC_D))
-        player.rotation_angle += 0.3;
+        player.rotation_angle += 0.09;
 }
 
 static void player_logic()
 {
-    player.velocity.x *= 0.97;
-    player.velocity.y *= 0.97;
+    player.velocity.x *= 0.99;
+    player.velocity.y *= 0.99;
 }
 
 static void player_graphics()
 {
     vec player_pos = vec_sum(player.pos, (vec){ screen_width / 2, screen_height / 2 });
-    float player_size = 8;
+    float player_size = 7;
     double t = 2.09;
     vec point1 = vec_sum(player_pos, (vec){ cos(player.rotation_angle) * player_size, sin(player.rotation_angle) * player_size });
     vec point2 = vec_sum(player_pos, (vec){ cos(player.rotation_angle - t) * player_size / 2, sin(player.rotation_angle - t) * player_size / 2 });
@@ -113,16 +120,18 @@ static void iterate_asteroids_logic()
 } 
 
 void game_init() {
-    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.5);
+    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.025);
     init_stars();
 
     list_constructor(&asteroids);
-    list_push_back(&asteroids, asteroid_new((vec){ 50, 7 }, (vec){ 0.5, -0.5 }, (vec){ 0, 0 }, 25));
-    list_push_back(&asteroids, asteroid_new((vec){ 8, 20 }, (vec){ 1, 0 }, (vec){ 0, 0 }, 40));
+    add_event(spawn_asteroids, asteroid_spawn_time);
+    //list_push_back(&asteroids, asteroid_new((vec){ 50, 7 }, (vec){ 0.5, -0.5 }, (vec){ 0, 0 }, 25));
+    //list_push_back(&asteroids, asteroid_new((vec){ 8, 20 }, (vec){ 1, 0 }, (vec){ 0, 0 }, 40));
 }
 
 void game_input() {
     player_input();
+    if (key_press(SC_ESCAPE)) run = 0;
 }
 
 void game_logic() {

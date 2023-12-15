@@ -11,12 +11,6 @@ const uint32 screen_width = 320;
 const uint32 screen_height = 200;
 const uint8* double_buffer = (const uint8*)0x100000; 
 
-//void setPixel(int16 x, int16 y, uint8 color)
-//{
-//    int32 offset = x + y * screen_width;
-//    *((uint8*)double_buffer + offset) = color;
-//}
-
 void drawFillRect(int16 x, int16 y, uint16 width, uint16 height, uint8 color)
 {
     for (uint16 i = y; i < y + height; i++)
@@ -40,13 +34,6 @@ void drawFillCircle(int16 x, int16 y, uint16 r, uint8 color)
         }
     }
 }
-
-//void setPixels(int16 x, int16 y, uint8 color) {
-//    if (x >= screen_width || y >= screen_height)
-//        return;
-//    int32 offset = x + y * screen_width;
-//    *((uint8*)double_buffer + offset) = color;
-//}
 
 void drawFillRects(int16 x, int16 y, uint16 width, uint16 height, uint8 color) {
     for (uint16 i = y; i < y + height; i++)

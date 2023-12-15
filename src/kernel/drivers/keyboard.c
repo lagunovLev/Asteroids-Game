@@ -2,12 +2,12 @@
 #include "../interrupts/idt.h"
 #include "../interrupts/irq.h"
 
-void (*keyboard_callback)(uint8 scancode, char* ascii, uint8 released);
+volatile void (*keyboard_callback)(uint8 scancode, char* ascii, uint8 released);
 
 uint8* key_flags;
 uint8* second_key_flags;
 
-static void handler(regs *r) {
+static volatile void handler(regs *r) {
     uint8 scancode = inb(0x60);
     uint8 kreleased = key_released(scancode);
     if (kreleased) 

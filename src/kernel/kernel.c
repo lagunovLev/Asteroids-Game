@@ -44,6 +44,7 @@ void kmain()
     }
     game_destruct();
     destruct_keyboard();
+    destruct_timer();
     malloc_destruct();
 }
 

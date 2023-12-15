@@ -7,6 +7,7 @@
 #define SC_D 0x20
 #define SC_SPACE 0x39
 #define SC_ENTER 0x1C
+#define SC_ESCAPE 1
 
 void init_keyboard();
 void destruct_keyboard();

@@ -74,16 +74,6 @@ list_elem* list_get_elem(List* list, int32 index)
     }
 }
 
-//void list_iter(List* list, void(*func)(void* data, uint32 index))
-//{
-//    uint32 i = 0;
-//    for (list_elem* item = list->begin; item != list->end; item = item->next)
-//    {
-//        func(item->data, i);
-//        i++;
-//    }
-//}
-
 void list_push_back(List* list, void* data)
 {
     list_elem* item = malloc(sizeof(list_elem));
