@@ -12,6 +12,7 @@
 
 List asteroids;
 float asteroid_spawn_time = 50;
+vec camera_pos;
 
 static void spawn_asteroids()
 {
@@ -77,13 +78,19 @@ static void player_input()
 
 static void player_logic()
 {
+    player.pos.x += player.velocity.x;
+    player.pos.y += player.velocity.y;
+
+    camera_pos.x -= player.velocity.x;
+    camera_pos.y -= player.velocity.y;
+
     player.velocity.x *= 0.99;
     player.velocity.y *= 0.99;
 }
 
 static void player_graphics()
 {
-    vec player_pos = vec_sum(player.pos, (vec){ screen_width / 2, screen_height / 2 });
+    vec player_pos = vec_sum(player.pos, camera_pos);
     float player_size = 7;
     double t = 2.09;
     vec point1 = vec_sum(player_pos, (vec){ cos(player.rotation_angle) * player_size, sin(player.rotation_angle) * player_size });
@@ -92,7 +99,6 @@ static void player_graphics()
     drawLines(point1.x, point1.y, point2.x, point2.y, 0x0E);
     drawLines(point1.x, point1.y, point3.x, point3.y, 0x0E);
     drawLines(point3.x, point3.y, point2.x, point2.y, 0x0E);
-    //drawFillRects(player.pos.x - 10 + screen_width / 2, player.pos.y - 10 + screen_height / 2, 20, 20, 0x0E);
 }
 
 static void iterate_asteroids_graphics()
@@ -101,7 +107,7 @@ static void iterate_asteroids_graphics()
     for (list_elem* i = asteroids.begin; i != NULL; i = i->next)
     {
         Asteroid* a_data = (Asteroid*)i->data;
-        drawFillCircles(a_data->pos.x + screen_width / 2, a_data->pos.y + screen_height / 2, a_data->size, 6);
+        drawFillCircles(a_data->pos.x + camera_pos.x, a_data->pos.y + camera_pos.y, a_data->size, 6);
         j++;
     }
 }
@@ -113,9 +119,21 @@ static void iterate_asteroids_logic()
     {
         Asteroid* a_data = (Asteroid*)i->data;
         a_data->pos = vec_sum(a_data->pos, a_data->velocity);
-        a_data->pos = vec_sub(a_data->pos, player.velocity);
         a_data->velocity = vec_sum(a_data->velocity, a_data->acceleration);
         j++;
+
+        //if (e->ticks_number == 0)
+        //{
+        //    void(*callback)() = e->event;
+        //    i = i->next;
+        //    free(list_remove(&events, j));
+        //    callback();
+        //}
+        //else 
+        //{
+        //    e->ticks_number--;
+        //    j++;
+        //}
     }
 } 
 
@@ -125,8 +143,9 @@ void game_init() {
 
     list_constructor(&asteroids);
     add_event(spawn_asteroids, asteroid_spawn_time);
-    //list_push_back(&asteroids, asteroid_new((vec){ 50, 7 }, (vec){ 0.5, -0.5 }, (vec){ 0, 0 }, 25));
-    //list_push_back(&asteroids, asteroid_new((vec){ 8, 20 }, (vec){ 1, 0 }, (vec){ 0, 0 }, 40));
+    camera_pos.x = screen_width / 2;
+    camera_pos.y = screen_height / 2;
+    list_push_back(&asteroids, asteroid_new((vec){ 50, 7 }, (vec){ 0, 0 }, (vec){ 0, 0 }, 25));
 }
 
 void game_input() {
