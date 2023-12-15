@@ -1,6 +1,7 @@
 #include "debug.h"
 #include "io/ports.h"
 #include <stdarg.h>
+#include "common.h"
 
 void dbg_putc(char c)
 {

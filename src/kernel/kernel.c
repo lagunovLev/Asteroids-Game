@@ -32,7 +32,7 @@ void kmain()
     {
         uint32 start_tick = tick;
 
-        clearScreen(0x00);
+        //clearScreen(0x00);
         game_input();
         update_key_flags();
         game_logic();

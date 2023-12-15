@@ -2,6 +2,7 @@
 #include "drivers/video.h"
 #include <stdarg.h>
 #include "debug.h"
+#include "math.h"
 
 uint16 strlen(char* str)
 {
@@ -9,12 +10,6 @@ uint16 strlen(char* str)
     while (str[i])
         i++;
     return i;
-}
-
-uint32 abs(int32 n)
-{
-    if (n < 0) return -n;
-    return n;
 }
 
 static uint16 number_of_digits(int32 n)
@@ -88,6 +83,47 @@ void hex_to_string(int32 n, char* str)
     str[i + num_of_digits] = '\0';
 }
 
+void float_to_string(double n1, char* str)
+{
+    uint16 i = 0;
+    if (n1 < 0)
+    {
+        str[i++] = '-';
+        n1 = -n1;
+    }
+    uint32 n = n1;
+
+    uint16 num_of_digits = number_of_digits(n);
+    uint32 t = n;
+    int32 g = 0;
+    for (int16 pos = i + num_of_digits - 1; pos != i - 1; pos--)
+    {
+        str[pos] = t % 10 + 48;
+        g = t % 10;
+        t /= 10;
+    }
+    str[i] = g + 48;
+
+    if ((int)(n1) == n1)
+    {
+        str[i + num_of_digits] = '\0';
+        return;
+    }
+    i += num_of_digits;
+    str[i++] = '.';
+    double f = n1 - n;
+    uint16 a = 0;
+    while (f != 0 && a < 6)
+    {
+        f *= 10;
+        uint32 h = f;
+        str[i++] = h + 48;
+        f -= h;
+        a++;
+    }
+    str[i] = '\0';
+}
+
 void memcpy(uint8* dest, uint8* src, uint32 size)
 {
     for (uint32 i = 0; i < size; i++)
@@ -147,7 +183,7 @@ void malloc_init()
 {
     header_start = (uint8*)double_buffer + 65536;
     pages = 1000000;
-    page_size = 1024;
+    page_size = 256;
     header_size = 1 * pages;
     heap_start = header_start + header_size;
     heap_size = pages * page_size;
@@ -262,6 +298,17 @@ void vsprintf(char *s, const char *format, va_list ap)
                     j++;
                 }
             }
+            else if (format[i] == 'f')
+            {
+                double f = va_arg(ap, double);
+                char buf[32];
+                float_to_string(f, buf);
+                for (uint16 k = 0; buf[k]; k++)
+                {
+                    s[j] = buf[k];
+                    j++;
+                }
+            }
             else if (format[i] == 'x')
             {
                 int32 x = va_arg(ap, int32);
@@ -272,6 +319,12 @@ void vsprintf(char *s, const char *format, va_list ap)
                     s[j] = buf[k];
                     j++;
                 }
+            }
+            else if (format[i] == 'c')
+            {
+                char c = va_arg(ap, uint32);
+                s[j] = c;
+                j++;
             }
             else if (format[i] == 's')
             {

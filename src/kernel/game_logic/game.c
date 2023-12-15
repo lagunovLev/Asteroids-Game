@@ -5,47 +5,139 @@
 #include "../kernel.h"
 #include "../debug.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/timer.h"
+#include "player.h"
+#include "../math.h"
+#include "stars.h"
 
-char* str = "";
-List test_list;
+List asteroids;
 
-void game_init() {
-    list_constructor(&test_list);
-    list_push_back(&test_list, asteroid_new(5, 7));
-    list_push_back(&test_list, asteroid_new(1488, 69));
-    list_push_back(&test_list, asteroid_new(89, 45));
-    list_push_back(&test_list, asteroid_new(1939, 1945));
-    list_insert(&test_list, asteroid_new(67, 12), -1);
-    asteroid_delete(list_remove(&test_list, -5));
+static void _draw_stars(int32 pos_x, int32 pos_y)
+{
+    int32 x_limit = screen_width + (pos_x > 0 ? -pos_x : 0);
+    int32 y_limit = screen_height + (pos_y > 0 ? -pos_y : 0);
+    int32 x_base = (pos_x < 0 ? -pos_x : 0);
+    int32 y_base = (pos_y < 0 ? -pos_y : 0);
+
+    for (uint32 y = y_base; y < y_limit; y++)
+    {
+        for (uint32 x = x_base; x < x_limit; x++)
+        {
+            uint8 star = starfield[x + y * screen_height];
+            *((uint8*)double_buffer + x + pos_x + (y + pos_y) * screen_width) = star;
+        }
+    }
 }
 
-void game_input() {
-    if (key_none(72)) 
-        str = "None";
-    if (key_press(72)) 
-        str = "Press";
-    if (key_release(72)) 
-        run = 0;
-    if (key_repeat(72)) 
-        str = "Repeat";
+static void stars_graphics()
+{
+    _draw_stars((int32)stars_pos.x, (int32)stars_pos.y);
+    _draw_stars((int32)stars_pos.x + screen_width, (int32)stars_pos.y);
+    _draw_stars((int32)stars_pos.x, (int32)stars_pos.y + screen_height);
+    _draw_stars((int32)stars_pos.x + screen_width, (int32)stars_pos.y + screen_height);
 }
 
-void game_logic() {
-
+static void stars_logic()
+{
+    stars_pos = vec_sum(vec_mul(player.velocity, -0.12), stars_pos);
+    if (stars_pos.x > 0.0)
+        stars_pos.x -= screen_width;
+    if (stars_pos.x < -(int32)screen_width)
+        stars_pos.x += screen_width;
+    if (stars_pos.y > 0.0)
+        stars_pos.y -= screen_height;
+    if (stars_pos.y < -(int32)screen_height)
+        stars_pos.y += screen_height;
 }
 
-void game_graphics() {
-    putString(0, 15 * 8, 0x65, "%s", str);
-    
+static void player_input()
+{
+    if (!key_none(SC_W))
+    {
+        player.velocity.x += cos(player.rotation_angle) * player.speed;
+        player.velocity.y += sin(player.rotation_angle) * player.speed;
+    }
+    if (!key_none(SC_S))
+    {
+        player.velocity.x -= cos(player.rotation_angle) * player.speed;
+        player.velocity.y -= sin(player.rotation_angle) * player.speed;
+    }
+    if (!key_none(SC_A))
+        player.rotation_angle -= 0.3;
+    if (!key_none(SC_D))
+        player.rotation_angle += 0.3;
+}
+
+static void player_logic()
+{
+    player.velocity.x *= 0.97;
+    player.velocity.y *= 0.97;
+}
+
+static void player_graphics()
+{
+    vec player_pos = vec_sum(player.pos, (vec){ screen_width / 2, screen_height / 2 });
+    float player_size = 8;
+    double t = 2.09;
+    vec point1 = vec_sum(player_pos, (vec){ cos(player.rotation_angle) * player_size, sin(player.rotation_angle) * player_size });
+    vec point2 = vec_sum(player_pos, (vec){ cos(player.rotation_angle - t) * player_size / 2, sin(player.rotation_angle - t) * player_size / 2 });
+    vec point3 = vec_sum(player_pos, (vec){ cos(player.rotation_angle + t) * player_size / 2, sin(player.rotation_angle + t) * player_size / 2 });
+    drawLines(point1.x, point1.y, point2.x, point2.y, 0x0E);
+    drawLines(point1.x, point1.y, point3.x, point3.y, 0x0E);
+    drawLines(point3.x, point3.y, point2.x, point2.y, 0x0E);
+    //drawFillRects(player.pos.x - 10 + screen_width / 2, player.pos.y - 10 + screen_height / 2, 20, 20, 0x0E);
+}
+
+static void iterate_asteroids_graphics()
+{
     uint32 j = 0; 
-    for (list_elem* i = test_list.begin; i != NULL; i = i->next)
+    for (list_elem* i = asteroids.begin; i != NULL; i = i->next)
     {
         Asteroid* a_data = (Asteroid*)i->data;
-        putString(0, j * 9, 0x65, "x: %d, y: %d", a_data->x, a_data->y);
+        drawFillCircles(a_data->pos.x + screen_width / 2, a_data->pos.y + screen_height / 2, a_data->size, 6);
         j++;
     }
 }
 
+static void iterate_asteroids_logic()
+{
+    uint32 j = 0; 
+    for (list_elem* i = asteroids.begin; i != NULL; i = i->next)
+    {
+        Asteroid* a_data = (Asteroid*)i->data;
+        a_data->pos = vec_sum(a_data->pos, a_data->velocity);
+        a_data->pos = vec_sub(a_data->pos, player.velocity);
+        a_data->velocity = vec_sum(a_data->velocity, a_data->acceleration);
+        j++;
+    }
+} 
+
+void game_init() {
+    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.5);
+    init_stars();
+
+    list_constructor(&asteroids);
+    list_push_back(&asteroids, asteroid_new((vec){ 50, 7 }, (vec){ 0.5, -0.5 }, (vec){ 0, 0 }, 25));
+    list_push_back(&asteroids, asteroid_new((vec){ 8, 20 }, (vec){ 1, 0 }, (vec){ 0, 0 }, 40));
+}
+
+void game_input() {
+    player_input();
+}
+
+void game_logic() {
+    player_logic();
+    iterate_asteroids_logic();
+    stars_logic();
+}
+
+void game_graphics() {
+    stars_graphics();
+    iterate_asteroids_graphics();
+    player_graphics();
+}
+
 void game_destruct() {
-    list_destructor(&test_list, asteroid_delete);
+    list_destructor(&asteroids, asteroid_delete);
+    destruct_stars();
 }

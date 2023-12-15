@@ -1,9 +1,9 @@
 #include "asteroid.h"
  
-Asteroid* asteroid_new(int16 x, int16 y)
+Asteroid* asteroid_new(vec pos, vec velocity, vec acceleration, uint16 size)
 {
     Asteroid* asteroid = malloc(sizeof(Asteroid));
-    asteroid_constructor(asteroid, x, y);
+    asteroid_constructor(asteroid, pos, velocity, acceleration, size);
     return asteroid;
 }
 
@@ -13,10 +13,12 @@ void asteroid_delete(Asteroid* this)
     free(this); 
 }
 
-void asteroid_constructor(Asteroid* this, int16 x, int16 y)
+void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleration, uint16 size)
 {
-    this->x = x;
-    this->y = y;
+    this->pos = pos;
+    this->velocity = velocity;
+    this->acceleration = acceleration;
+    this->size = size;
 }
 
 void asteroid_destructor(Asteroid* this)
