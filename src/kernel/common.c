@@ -182,7 +182,7 @@ static uint32 find_free_pages(uint32 pages_occupies)
 void malloc_init()
 {
     header_start = (uint8*)double_buffer + 65536;
-    pages = 1000000;
+    pages = 1000000; 
     page_size = 256;
     header_size = 1 * pages;
     heap_start = header_start + header_size;
@@ -196,8 +196,10 @@ void malloc_destruct()
 {
     if (malloc_calls > free_calls)
         dbg_printf("More malloc calls than free calls. Memory leak");
-    if (malloc_calls < free_calls)
+    else if (malloc_calls < free_calls)
         dbg_printf("More free calls than malloc calls. Memory freed multiplke times");
+    else 
+        dbg_printf("Memory is fine");
 }
 
 void* malloc(uint32 n)
@@ -211,7 +213,7 @@ void* malloc(uint32 n)
     uint8* addr = heap_start + start_page * page_size;
     *addr = 1;
     *((uint32*)(addr + 1)) = pages_occupies;
-    dbg_printf("Allocating memory. Addres: %x. Pages number: %d. Start page: %d. Allocated bytes: %d\n", addr, pages_occupies, start_page, n - 5);
+    //dbg_printf("Allocating memory. Addres: %x. Pages number: %d. Start page: %d. Allocated bytes: %d\n", addr, pages_occupies, start_page, n - 5);
     return addr + 5;
 }
 
@@ -222,7 +224,7 @@ void free(void* ptr)
     uint8 is_occupied = *iptr;
     uint32 pages_occupied = *((uint32*)(iptr + 1));
     uint32 page_number = ((uint32)(iptr) - (uint32)(heap_start)) / page_size;
-    dbg_printf("Freeing memory. Addres: %x. Pages number: %d. Start page: %d.\n", iptr, pages_occupied, page_number);
+    //dbg_printf("Freeing memory. Addres: %x. Pages number: %d. Start page: %d.\n", iptr, pages_occupied, page_number);
     if (!is_occupied) {
         asm volatile("int $19");
     }

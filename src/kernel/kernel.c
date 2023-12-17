@@ -19,7 +19,6 @@ void kmain()
     idt_install();
     isrs_install();
     irq_install();
-    asm volatile("sti");
     malloc_init();
     set_timer_callback(timer_callback);
     init_timer(50);
@@ -27,6 +26,7 @@ void kmain()
     init_keyboard();
     srand(trand());
     game_init();
+    asm volatile("sti");
     
     while (run)
     {
@@ -42,6 +42,7 @@ void kmain()
         uint32 end_tick = tick;
         calculate_delay(1, start_tick, end_tick);
     }
+    asm volatile("cli");
     game_destruct();
     destruct_keyboard();
     destruct_timer();

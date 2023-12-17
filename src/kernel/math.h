@@ -1,6 +1,8 @@
 #pragma once
 #include "common.h"
 
+#define PI 3.14159
+
 double dmin(double a, double b);
 double dmax(double a, double b);
 double sqrt(double n);

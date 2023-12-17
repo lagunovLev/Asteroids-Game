@@ -8,7 +8,7 @@ typedef int int32;
 typedef char int8;
 typedef short int16;
 
-#define RAND_MAX 32767
+#define RAND_MAX 4294967295
 #define NULL 0
 
 uint16 strlen(char* str);

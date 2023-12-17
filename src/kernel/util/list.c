@@ -1,4 +1,5 @@
 #include "list.h"
+#include "../debug.h"
 
 void list_constructor(List* list)
 {
@@ -192,11 +193,13 @@ void* list_remove(List* list, int32 index)
 
 void* list_remove_by_elem(List* list, list_elem* elem)
 {
-    if (elem->prev == NULL)
+    if (list->size == 0 || elem == NULL)
+        return NULL;
+    if (elem == list->begin)
         return list_pop_front(list);
-    if (elem->next == NULL)
+    if (elem == list->end)
         return list_pop_back(list);
-
+    
     list_elem* item_prev = elem->prev;
     list_elem* item_next = elem->next;
     void* data = elem->data;
@@ -205,20 +208,4 @@ void* list_remove_by_elem(List* list, list_elem* elem)
     item_next->prev = item_prev;
     list->size--;
     return data;
-}
-
-
-List_iterator list_get_iter(List* list, int32 index) {
-    List_iterator iter;
-    iter.i = 0;
-    iter.elem = list_get_elem(list, index);
-    return iter;
-}
-
-void* remove(List* list, List_iterator iter) {
-    list_elem* n = iter.elem->next;
-    void* res = list_remove_by_elem(&list, iter.elem);
-    iter.elem = n;
-    iter.i--;
-    return res;
 }

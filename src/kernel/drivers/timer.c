@@ -7,6 +7,7 @@
 volatile void(*timer_callback)() = 0;
 volatile uint32 tick = 0;
 static List events;
+static uint8 initialized = 0;
 
 typedef struct {
     uint32 ticks_number;
@@ -19,24 +20,26 @@ void set_timer_callback(void (*callback)()) {
 
 volatile static void handler(regs *r)
 {
+    if (!initialized)
+        return;
     timer_callback();
     tick++;
 
-    uint32 j = 0;
-    for (list_elem* i = events.begin; i != NULL; i = i->next)
+    for (list_elem* iter = events.begin; iter != NULL;)
     {
-        Event* e = (Event*)i->data;
+        Event* e = iter->data;
         if (e->ticks_number == 0)
         {
             void(*callback)() = e->event;
-            i = i->next;
-            free(list_remove(&events, j));
+            list_elem* next_iter = iter->next;
+            free(list_remove_by_elem(&events, iter));
+            iter = next_iter;
             callback();
         }
         else 
         {
             e->ticks_number--;
-            j++;
+            iter = iter->next;
         }
     }
 }
@@ -61,15 +64,19 @@ void init_timer(uint32 freq)
     outb(0x40, h);
 
     list_constructor(&events);
+    initialized = 1;
 }
 
-void delete_event(Event* data) {
+static void delete_event(Event* data) {
     free(data);
 }
 
 void destruct_timer()
 {
+    initialized = 0;
+    //dbg_printf("Destructing timer\n");
     list_destructor(&events, delete_event);
+    //dbg_printf("Destructed\n");
 }
 
 void wait(uint32 ticks)
