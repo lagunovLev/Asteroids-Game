@@ -3,6 +3,7 @@
 #include "font.h"
 #include <stdarg.h>
 #include "../debug.h"
+#include "../util/vec.h"
 
 void vsync_wait();
 
@@ -29,7 +30,7 @@ void drawFillCircle(int16 x, int16 y, uint16 r, uint8 color)
     {
         for (int j = -r; j <= r; j++)
         {
-            if (r > i * i + j * j)
+            if (i * i + j * j <= r * r)
                 setPixel(x + i, y + j, color);
         }
     }
@@ -50,7 +51,7 @@ void drawFillCircles(int16 x, int16 y, uint16 r, uint8 color) {
     {
         for (int j = -r; j <= r; j++)
         {
-            if (r > i * i + j * j)
+            if (i * i + j * j <= r * r)
                 setPixels(x + i, y + j, color);
         }
     }
