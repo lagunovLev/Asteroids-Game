@@ -2,14 +2,16 @@
 #include "../common.h"
 #include "../util/vec.h"
 
-#define ASTEROID_VERTICIES 24
+#define ASTEROID_SIZE_MIN 0.6
+#define ASTEROID_SIZE_MAX 1.4
 
 typedef struct {
     vec pos;
     vec velocity;
     vec acceleration;
     uint16 size;
-    vec verticies[ASTEROID_VERTICIES];
+    uint16 verticies_count;
+    vec* verticies;
 } Asteroid;
 
 Asteroid* asteroid_new(vec pos, vec velocity, vec acceleration, uint16 size);

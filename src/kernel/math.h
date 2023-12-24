@@ -5,6 +5,8 @@
 
 double dmin(double a, double b);
 double dmax(double a, double b);
+int min(int a, int b);
+int max(int a, int b);
 double sqrt(double n);
 int factorial(int n);
 double pow(double base, int exponent);
