@@ -12,6 +12,10 @@ typedef struct {
     uint16 size;
     uint16 verticies_count;
     vec* verticies;
+    uint8 damaged;
+    float health;
+    float angle;
+    float rotation_speed;
 } Asteroid;
 
 Asteroid* asteroid_new(vec pos, vec velocity, vec acceleration, uint16 size);

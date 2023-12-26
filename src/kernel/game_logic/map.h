@@ -4,10 +4,11 @@
 #include "../common.h"
 #include "../util/list.h"
 #include "asteroid.h"
+#include "bullet.h"
 
 typedef struct {
     List asteroids;
-    //List bullets;
+    List bullets;
 } Cell;
 
 void cell_constructor(Cell* this);
@@ -29,4 +30,5 @@ typedef struct {
 void map_constructor(Map* this, ivec center_pos, uint16 cell_size, uint16 side_size);
 void map_destructor(Map* this);
 void map_push_asteroid(Map* this, Asteroid* asteroid);
+void map_push_bullet(Map* this, Bullet* bullet);
 void map_push_asteroid_pos(Map* this, Asteroid* asteroid, ivec pos);

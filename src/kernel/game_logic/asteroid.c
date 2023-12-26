@@ -20,7 +20,10 @@ void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleratio
     this->velocity = velocity;
     this->acceleration = acceleration;
     this->size = size;
-    this->verticies_count = size * PI / 4;
+    this->damaged = 0;
+    this->verticies_count = size * PI / 3;
+    this->angle = 0;
+    this->rotation_speed = rand_float(-0.5, 0.5);
     if (this->verticies_count % 2 != 0) this->verticies_count++;
     this->verticies = malloc(sizeof(vec) * this->verticies_count);
 
@@ -49,6 +52,8 @@ void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleratio
     this->verticies[this->verticies_count - 1] = vert_pos;
     free(t);
     this->size *= average_size;
+    this->size *= 1.1;
+    this->health = PI * this->size * this->size;
 }
 
 void asteroid_destructor(Asteroid* this)

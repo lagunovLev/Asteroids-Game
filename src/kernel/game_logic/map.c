@@ -4,12 +4,12 @@
 
 void cell_constructor(Cell* this) {
     list_constructor(&this->asteroids);
-    //list_constructor(&this->bullets);
+    list_constructor(&this->bullets);
 }
 
 void cell_destructor(Cell* this) {
     list_destructor(&this->asteroids, asteroid_delete);
-    //list_destructor(&this->bullets);
+    list_destructor(&this->bullets, bullet_delete);
 }
 
 Cell* cell_new() {
@@ -72,7 +72,21 @@ void map_push_asteroid(Map* this, Asteroid* asteroid)
     pos = ivec_sub(pos, this->corner00_pos);
     pos = ivec_div(pos, this->cell_size);
     list_push_back(&this->cells[pos.x][pos.y].asteroids, asteroid);
-    //dbg_printf("Spawned asteroid %d %d\n", pos.x, pos.y);
+}
+
+void map_push_bullet(Map* this, Bullet* bullet)
+{
+    if (bullet->pos.x < this->corner00_pos.x || bullet->pos.x >= this->corner11_pos.x || 
+        bullet->pos.y < this->corner00_pos.y || bullet->pos.y >= this->corner11_pos.y)
+    {
+        bullet_delete(bullet);
+        return;
+    }
+
+    ivec pos = { bullet->pos.x, bullet->pos.y };
+    pos = ivec_sub(pos, this->corner00_pos);
+    pos = ivec_div(pos, this->cell_size);
+    list_push_back(&this->cells[pos.x][pos.y].bullets, bullet);
 }
 
 void map_push_asteroid_pos(Map* this, Asteroid* asteroid, ivec pos)

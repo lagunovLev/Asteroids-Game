@@ -10,14 +10,27 @@
 #include "../math.h"
 #include "stars.h"
 #include "map.h"
+#include "heart.h"
 
 Map map;
 vec camera_pos;
-float asteroid_spawn_time = 50;
+float asteroid_spawn_time = 150;
 float border_pushing = 0.08f;
 int32 border_width_cells = 2;
-int32 asteroid_min_size = 8;
-int32 asteroid_max_size = 22;
+int32 asteroid_min_size = 4;
+int32 asteroid_max_size = 18;
+int8 player_health = 3;
+float player_size = 6;
+uint8 is_player_vulnerable = 1;
+int32 player_damage_blinking_freq = 8;
+int32 player_invulnerable_duration = 120;
+uint32 player_color = 0x0E;
+uint32 ui_color = 0x5F;
+int32 score = 0;
+uint32 shoot_cooldown = 8;
+uint8 reloading = 0;
+float bullet_speed = 2.5;
+float bullet_damage = 100;
 
 static uint8 isInCamera(vec pos, float object_size)
 {
@@ -36,16 +49,45 @@ static void _spawn_asteroid()
     } while (isInCamera((vec){ x, y }, size));
     vec pos = { x, y };
 
-    float speed = rand_float(0.1, 1.0);
+    float speed = rand_float(0.1, 0.8);
     float angle = rand_float(0.0, 2 * PI);
     vec velocity = { cos(angle) * speed, sin(angle) * speed };
 
     map_push_asteroid(&map, asteroid_new(pos, velocity, (vec){ 0, 0 }, size));
 }
 
+static void player_vulnerable_event1();
+
+static void player_vulnerable_event2()
+{
+    if (!is_player_vulnerable)
+    {
+        player_color = 0x0E;
+        ui_color = 0x5F;
+        add_event(player_vulnerable_event1, player_damage_blinking_freq);
+    }
+}
+
+static void player_vulnerable_event1()
+{
+    if (!is_player_vulnerable)
+    {
+        player_color = 0x28;
+        ui_color = 0x28;
+        add_event(player_vulnerable_event2, player_damage_blinking_freq);
+    }
+}
+
+static void player_invulnerable_end()
+{
+    player_color = 0x0E;
+    ui_color = 0x5F;
+    is_player_vulnerable = 1;
+}
+
 static void spawn_start_asteroids()
 {
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < 25; i++)
         _spawn_asteroid();
 }
 
@@ -82,7 +124,6 @@ static void stars_graphics()
 
 static void stars_logic()
 {
-    //stars_pos = vec_sum(vec_mul(player.velocity, -0.12), stars_pos);
     stars_pos = vec_mul(camera_pos, -0.12);
     if (stars_pos.x > 0.0)
         stars_pos.x -= screen_width;
@@ -92,6 +133,22 @@ static void stars_logic()
         stars_pos.y -= screen_height;
     if (stars_pos.y < -(int32)screen_height)
         stars_pos.y += screen_height;
+}
+
+static void reloading_end()
+{
+    reloading = 0;
+}
+
+static void shoot()
+{
+    float a = player.rotation_angle + rand_float(-0.04, 0.04);
+    float p_x = player.pos.x + cos(player.rotation_angle) * player_size;
+    float p_y = player.pos.y + sin(player.rotation_angle) * player_size;
+    float v_x = cos(a) * bullet_speed;
+    float v_y = sin(a) * bullet_speed;
+    map_push_bullet(&map, bullet_new((vec){ p_x, p_y }, (vec){ v_x, v_y }, (vec){ 0, 0 }));
+    add_event(reloading_end, shoot_cooldown);
 }
 
 static void player_input()
@@ -110,6 +167,28 @@ static void player_input()
         player.rotation_angle -= 0.09;
     if (!key_none(SC_D))
         player.rotation_angle += 0.09;
+    if (reloading) return;
+    if (!key_none(SC_SPACE))
+    {
+        reloading = 1;
+        shoot();
+    }
+}
+
+static void check_player_collisions(int32 cell_x, int32 cell_y)
+{
+    for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
+    {
+        Asteroid* a = i->data;
+        float distance = vec_distance(a->pos, player.pos);
+        if (distance <= player_size / 2 + a->size)
+        {
+            player_health--;
+            is_player_vulnerable = 0;
+            player_vulnerable_event1();
+            add_event(player_invulnerable_end, player_invulnerable_duration);
+        }
+    }
 }
 
 static void player_logic()
@@ -134,22 +213,58 @@ static void player_logic()
         player.velocity.x -= border_pushing;
     if (player.pos.y > map.corner11_pos.y - border_width_cells * map.cell_size)
         player.velocity.y -= border_pushing;
+
+    if (is_player_vulnerable) {
+        int32 cell_player_x = (player.pos.x - map.corner00_pos.x) / map.cell_size;
+        int32 cell_player_y = (player.pos.y - map.corner00_pos.y) / map.cell_size;
+
+        check_player_collisions(cell_player_x, cell_player_y);
+        uint8 left = 0, right = 0, top = 0, bottom = 0;
+        float a_size = asteroid_max_size * ASTEROID_SIZE_MAX;
+        if (player.pos.x - map.corner00_pos.x - map.cell_size * cell_player_x <= a_size)
+        {
+            left = 1;
+            check_player_collisions(cell_player_x - 1, cell_player_y);
+        }
+        if (player.pos.y - map.corner00_pos.y - map.cell_size * cell_player_y <= a_size)
+        {
+            top = 1;
+            check_player_collisions(cell_player_x, cell_player_y - 1);
+        }
+        if (map.corner00_pos.x + map.cell_size * (cell_player_x + 1) - player.pos.x <= a_size)
+        {
+            right = 1;
+            check_player_collisions(cell_player_x + 1, cell_player_y);
+        }
+        if (map.corner00_pos.y + map.cell_size * (cell_player_y + 1) - player.pos.y <= a_size)
+        {
+            bottom = 1;
+            check_player_collisions(cell_player_x, cell_player_y + 1);
+        }
+        if (left && top)
+            check_player_collisions(cell_player_x - 1, cell_player_y - 1);
+        if (left && bottom)
+            check_player_collisions(cell_player_x - 1, cell_player_y + 1);
+        if (right && top)
+            check_player_collisions(cell_player_x + 1, cell_player_y - 1);
+        if (right && bottom)
+            check_player_collisions(cell_player_x + 1, cell_player_y + 1);
+    }
 }
 
 static void player_graphics()
 {
     vec player_pos = vec_sub(player.pos, camera_pos);
-    float player_size = 7;
     double t = 2.09;
     vec point1 = vec_sum(player_pos, (vec){ cos(player.rotation_angle) * player_size, sin(player.rotation_angle) * player_size });
     vec point2 = vec_sum(player_pos, (vec){ cos(player.rotation_angle - t) * player_size / 2, sin(player.rotation_angle - t) * player_size / 2 });
     vec point3 = vec_sum(player_pos, (vec){ cos(player.rotation_angle + t) * player_size / 2, sin(player.rotation_angle + t) * player_size / 2 });
-    drawLines(point1.x, point1.y, point2.x, point2.y, 0x0E);
-    drawLines(point1.x, point1.y, point3.x, point3.y, 0x0E);
-    drawLines(point3.x, point3.y, point2.x, point2.y, 0x0E);
+    drawLines(point1.x, point1.y, point2.x, point2.y, player_color);
+    drawLines(point1.x, point1.y, point3.x, point3.y, player_color);
+    drawLines(point3.x, point3.y, point2.x, point2.y, player_color);
 }
 
-static void iterate_asteroids_graphics()
+static void iterate_cells_graphics()
 {
     int32 start_x = (camera_pos.x - map.corner00_pos.x) / map.cell_size - 1;
     int32 start_y = (camera_pos.y - map.corner00_pos.y) / map.cell_size - 1;
@@ -162,7 +277,13 @@ static void iterate_asteroids_graphics()
             for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
             {
                 Asteroid* a_data = (Asteroid*)i->data;
-                //drawFillCircles(a_data->pos.x + camera_pos.x, a_data->pos.y + camera_pos.y, a_data->size, 3);
+                uint8 color = 6;
+                if (a_data->damaged)
+                {
+                    color = 0x0F;
+                    a_data->damaged = 0;
+                }
+
                 if (!isInCamera(a_data->pos, a_data->size * ASTEROID_SIZE_MAX))
                     continue;
 
@@ -171,16 +292,49 @@ static void iterate_asteroids_graphics()
                 for (int i = 1; i < a_data->verticies_count; i++)
                 {
                     vec pos = { a_data->pos.x - camera_pos.x + a_data->verticies[i].x, a_data->pos.y - camera_pos.y + a_data->verticies[i].y };
-                    drawLines(pos.x, pos.y, next_pos.x, next_pos.y, 6);
+                    drawLines(pos.x, pos.y, next_pos.x, next_pos.y, color);
                     next_pos = pos;
                 }
-                drawLines(first_pos.x, first_pos.y, next_pos.x, next_pos.y, 6);
+                drawLines(first_pos.x, first_pos.y, next_pos.x, next_pos.y, color);
+            }
+            for (list_elem* i = map.cells[cell_x][cell_y].bullets.begin; i != NULL; i = i->next)
+            {
+                Bullet* b = i->data;
+                setPixels(b->pos.x - camera_pos.x, b->pos.y - camera_pos.y, 0x34);
             }
         }
     }
 }
 
-static void iterate_asteroids_logic()
+static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
+{
+    uint8 collided = 0;
+    for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL;)
+    {
+        Asteroid* a = (Asteroid*)i->data;
+        if (vec_distance(b->pos, a->pos) <= a->size)
+        {
+            a->damaged = 1;
+            a->health -= bullet_damage;
+            if (a->health <= 0)
+            {
+                list_elem* i_next = i->next;
+                list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
+                asteroid_delete(a); // TODO
+                score++;
+                if (score % 100 == 0)
+                    player_health = min(3, player_health + 1);
+                i = i_next;
+            }
+            else i = i->next;
+            collided = 1;
+        }
+        else i = i->next;
+    }
+    return collided;
+}
+
+static void iterate_cells_logic()
 {
     for (int cell_x = 0; cell_x < map.side_size; cell_x++)
     {
@@ -191,6 +345,7 @@ static void iterate_asteroids_logic()
                 Asteroid* a_data = (Asteroid*)i->data;
                 a_data->pos = vec_sum(a_data->pos, a_data->velocity);
                 a_data->velocity = vec_sum(a_data->velocity, a_data->acceleration);
+                a_data->angle += a_data->rotation_speed;
 
                 if (a_data->pos.x < map.corner00_pos.x + border_width_cells * map.cell_size)
                     a_data->velocity.x += border_pushing;
@@ -209,8 +364,69 @@ static void iterate_asteroids_logic()
                 {
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
-                    //dbg_printf("Moving asteroid from %d %d to %d %d", );
                     map_push_asteroid(&map, a_data);
+                    i = i_next;
+                }
+                else i = i->next;
+            }
+            for (list_elem* i = map.cells[cell_x][cell_y].bullets.begin; i != NULL;)
+            {
+                Bullet* b = i->data;
+                b->pos = vec_sum(b->pos, b->velocity);
+                b->velocity = vec_sum(b->velocity, b->acceleration);
+
+                uint8 collided = 0;
+
+                collided = max(bullet_check_collisions(cell_x, cell_y, b), collided);
+                uint8 left = 0, right = 0, top = 0, bottom = 0;
+                float a_size = asteroid_max_size * ASTEROID_SIZE_MAX;
+                if (b->pos.x - map.corner00_pos.x - map.cell_size * cell_x <= a_size)
+                {
+                    left = 1;
+                    collided = max(bullet_check_collisions(cell_x - 1, cell_y, b), collided);
+                }
+                if (b->pos.y - map.corner00_pos.y - map.cell_size * cell_y <= a_size)
+                {
+                    top = 1;
+                    collided = max(bullet_check_collisions(cell_x, cell_y - 1, b), collided);
+                }
+                if (map.corner00_pos.x + map.cell_size * (cell_x + 1) - b->pos.x <= a_size)
+                {
+                    right = 1;
+                    collided = max(bullet_check_collisions(cell_x + 1, cell_y, b), collided);
+                }
+                if (map.corner00_pos.y + map.cell_size * (cell_y + 1) - b->pos.y <= a_size)
+                {
+                    bottom = 1;
+                    collided = max(bullet_check_collisions(cell_x, cell_y + 1, b), collided);
+                }
+                if (left && top)
+                    collided = max(bullet_check_collisions(cell_x - 1, cell_y - 1, b), collided);
+                if (left && bottom)
+                    collided = max(bullet_check_collisions(cell_x - 1, cell_y + 1, b), collided);
+                if (right && top)
+                    collided = max(bullet_check_collisions(cell_x + 1, cell_y - 1, b), collided);
+                if (right && bottom)
+                    collided = max(bullet_check_collisions(cell_x + 1, cell_y + 1, b), collided);
+
+                if (collided)
+                {
+                    list_elem* i_next = i->next;
+                    list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
+                    bullet_delete(b);
+                    i = i_next;
+                    continue;
+                }
+
+                int32 c_x = b->pos.x - map.corner00_pos.x;
+                c_x /= map.cell_size;
+                int32 c_y = b->pos.y - map.corner00_pos.y;
+                c_y /= map.cell_size;
+                if (c_x != cell_x || c_y != cell_y)
+                {
+                    list_elem* i_next = i->next;
+                    list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
+                    map_push_bullet(&map, b);
                     i = i_next;
                 }
                 else i = i->next;
@@ -218,6 +434,20 @@ static void iterate_asteroids_logic()
         }
     }
 } 
+
+static void display_ui()
+{
+    putString(1, 1, ui_color, "Score: %d", score);
+    if (player_health > 0)
+    {
+        int16 start_x = screen_width - (heart_size_x + 1) * player_health;
+        for (int i = 0; i < player_health; i++)
+        {
+            put_heart(start_x, 1, ui_color);
+            start_x += heart_size_x + 1;
+        }
+    }
+}
 
 void game_init() {
     player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.023); 
@@ -237,14 +467,15 @@ void game_input() {
 
 void game_logic() {
     player_logic();
-    iterate_asteroids_logic();
+    iterate_cells_logic();
     stars_logic();
 }
 
 void game_graphics() {
     stars_graphics();
-    iterate_asteroids_graphics();
+    iterate_cells_graphics();
     player_graphics();
+    display_ui();
 }
 
 void game_destruct() {
