@@ -17,7 +17,7 @@ vec camera_pos;
 float asteroid_spawn_time = 150;
 float border_pushing = 0.08f;
 int32 border_width_cells = 2;
-int32 asteroid_min_size = 4;
+int32 asteroid_min_size = 5;
 int32 asteroid_max_size = 18;
 int8 player_health = 3;
 float player_size = 6;
@@ -287,15 +287,31 @@ static void iterate_cells_graphics()
                 if (!isInCamera(a_data->pos, a_data->size * ASTEROID_SIZE_MAX))
                     continue;
 
-                vec first_pos = { a_data->pos.x - camera_pos.x + a_data->verticies[0].x, a_data->pos.y - camera_pos.y + a_data->verticies[0].y };
-                vec next_pos = first_pos;
+                //vec first_pos = { a_data->pos.x - camera_pos.x + a_data->verticies[0].x, a_data->pos.y - camera_pos.y + a_data->verticies[0].y };
+                //vec next_pos = first_pos;
+                //for (int i = 1; i < a_data->verticies_count; i++)
+                //{
+                //    vec pos = { a_data->pos.x - camera_pos.x + a_data->verticies[i].x, a_data->pos.y - camera_pos.y + a_data->verticies[i].y };
+                //    drawLines(pos.x, pos.y, next_pos.x, next_pos.y, color);
+                //    next_pos = pos;
+                //}
+                //drawLines(first_pos.x, first_pos.y, next_pos.x, next_pos.y, color);
+
+                float step = 2 * PI / a_data->verticies_count;
+                vec vert_temp_pos = { cos(a_data->angle) * a_data->verticies[0], sin(a_data->angle) * a_data->verticies[0] };
+                vert_temp_pos = vec_sum(a_data->pos, vert_temp_pos);
+                vert_temp_pos = vec_sub(vert_temp_pos, camera_pos);
+                vec first_pos = vert_temp_pos;
                 for (int i = 1; i < a_data->verticies_count; i++)
                 {
-                    vec pos = { a_data->pos.x - camera_pos.x + a_data->verticies[i].x, a_data->pos.y - camera_pos.y + a_data->verticies[i].y };
-                    drawLines(pos.x, pos.y, next_pos.x, next_pos.y, color);
-                    next_pos = pos;
+                    float angle = step * i + a_data->angle;
+                    vec vert_pos = { cos(angle) * a_data->verticies[i], sin(angle) * a_data->verticies[i] };
+                    vert_pos = vec_sum(a_data->pos, vert_pos);
+                    vert_pos = vec_sub(vert_pos, camera_pos);
+                    drawLines(vert_temp_pos.x, vert_temp_pos.y, vert_pos.x, vert_pos.y, color);
+                    vert_temp_pos = vert_pos;
                 }
-                drawLines(first_pos.x, first_pos.y, next_pos.x, next_pos.y, color);
+                drawLines(vert_temp_pos.x, vert_temp_pos.y, first_pos.x, first_pos.y, color);
             }
             for (list_elem* i = map.cells[cell_x][cell_y].bullets.begin; i != NULL; i = i->next)
             {

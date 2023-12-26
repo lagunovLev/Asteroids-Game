@@ -11,7 +11,7 @@ typedef struct {
     vec acceleration;
     uint16 size;
     uint16 verticies_count;
-    vec* verticies;
+    float* verticies;
     uint8 damaged;
     float health;
     float angle;
