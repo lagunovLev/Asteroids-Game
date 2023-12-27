@@ -114,7 +114,7 @@ static void _spawn_asteroid()
     vec pos = { x, y };
     uint8 strong = rand_float(0, 1) < strong_asteroid_chance ? 1 : 0; 
 
-    float speed = rand_float(0.1, 0.8);
+    float speed = rand_float(0.08, 0.8);
     float angle = rand_float(0.0, 2 * PI);
     vec velocity = { cos(angle) * speed, sin(angle) * speed };
 

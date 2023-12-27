@@ -14,6 +14,7 @@ char* text2 = "Press enter to retry";
 
 void gameover_init()
 {
+    memset(text1, 0, sizeof(text1));
     sprintf(text1, "Your score is: %d", score);
     pos_x1 = (screen_width - strlen(text1) * char_width) / 2;
     pos_y1 = (screen_height - char_height) / 2;
