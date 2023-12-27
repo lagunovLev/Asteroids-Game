@@ -16,9 +16,10 @@ typedef struct {
     float health;
     float angle;
     float rotation_speed;
+    uint8 strong;
 } Asteroid;
 
-Asteroid* asteroid_new(vec pos, vec velocity, vec acceleration, uint16 size);
+Asteroid* asteroid_new(vec pos, vec velocity, vec acceleration, uint16 size, uint8 strong);
 void asteroid_delete(Asteroid* this);
-void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleration, uint16 size);
+void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleration, uint16 size, uint8 strong);
 void asteroid_destructor(Asteroid* this);

@@ -11,26 +11,90 @@
 #include "stars.h"
 #include "map.h"
 #include "heart.h"
+#include "gameover.h"
 
 Map map;
 vec camera_pos;
-float asteroid_spawn_time = 150;
-float border_pushing = 0.08f;
-int32 border_width_cells = 2;
-int32 asteroid_min_size = 5;
-int32 asteroid_max_size = 18;
-int8 player_health = 3;
-float player_size = 6;
-uint8 is_player_vulnerable = 1;
-int32 player_damage_blinking_freq = 8;
-int32 player_invulnerable_duration = 120;
-uint32 player_color = 0x0E;
-uint32 ui_color = 0x5F;
-int32 score = 0;
-uint32 shoot_cooldown = 8;
-uint8 reloading = 0;
-float bullet_speed = 2.5;
-float bullet_damage = 100;
+float asteroid_spawn_time;
+float border_pushing;
+int32 border_width_cells;
+int32 asteroid_min_size;
+int32 asteroid_max_size;
+int8 player_health;
+float player_size;
+uint8 is_player_vulnerable;
+int32 player_damage_blinking_freq;
+int32 player_invulnerable_duration;
+uint32 player_color;
+uint32 ui_color;
+int32 score;
+uint32 shoot_cooldown;
+uint8 reloading;
+float strong_asteroid_chance;
+float bullet_speed;
+float bullet_damage;
+
+int32 increase_difficulty_time1;
+int32 increase_difficulty_time2;
+int32 increase_difficulty_time3;
+int32 increase_difficulty_time4;
+
+static void init_values()
+{
+    asteroid_spawn_time = 120;
+    border_pushing = 0.08f;
+    border_width_cells = 2;
+    asteroid_min_size = 5;
+    asteroid_max_size = 18;
+    player_health = 3;
+    player_size = 6;
+    is_player_vulnerable = 1;
+    player_damage_blinking_freq = 8;
+    player_invulnerable_duration = 120;
+    player_color = 0x0E;
+    ui_color = 0x5F;
+    score = 0;
+    shoot_cooldown = 8;
+    reloading = 0;
+    strong_asteroid_chance = 0;
+    bullet_speed = 2.5;
+    bullet_damage = 100;
+
+    increase_difficulty_time1 = 2000;
+    increase_difficulty_time2 = 3500;
+    increase_difficulty_time3 = 5000;
+    increase_difficulty_time4 = 6500;
+}
+
+static void increase_difficulty4()
+{
+    asteroid_spawn_time = 50;
+    strong_asteroid_chance = 1;
+    dbg_printf("Increased difficulty!\n");
+}
+
+static void increase_difficulty3()
+{
+    asteroid_spawn_time = 60;
+    strong_asteroid_chance = 0.7;
+    add_event(increase_difficulty4, increase_difficulty_time4);
+    dbg_printf("Increased difficulty!\n");
+}
+
+static void increase_difficulty2()
+{
+    asteroid_spawn_time = 75;
+    strong_asteroid_chance = 0.4;
+    add_event(increase_difficulty3, increase_difficulty_time3);
+    dbg_printf("Increased difficulty!\n");
+}
+
+static void increase_difficulty1()
+{
+    asteroid_spawn_time = 100;
+    add_event(increase_difficulty2, increase_difficulty_time2);
+    dbg_printf("Increased difficulty!\n");
+}
 
 static uint8 isInCamera(vec pos, float object_size)
 {
@@ -48,12 +112,13 @@ static void _spawn_asteroid()
         y = rand_float(map.corner00_pos.y + border_width_cells * map.cell_size, map.corner11_pos.y - 1 - border_width_cells * map.cell_size);
     } while (isInCamera((vec){ x, y }, size));
     vec pos = { x, y };
+    uint8 strong = rand_float(0, 1) < strong_asteroid_chance ? 1 : 0; 
 
     float speed = rand_float(0.1, 0.8);
     float angle = rand_float(0.0, 2 * PI);
     vec velocity = { cos(angle) * speed, sin(angle) * speed };
 
-    map_push_asteroid(&map, asteroid_new(pos, velocity, (vec){ 0, 0 }, size));
+    map_push_asteroid(&map, asteroid_new(pos, velocity, (vec){ 0, 0 }, size, strong));
 }
 
 static void player_vulnerable_event1();
@@ -87,7 +152,7 @@ static void player_invulnerable_end()
 
 static void spawn_start_asteroids()
 {
-    for (int i = 0; i < 25; i++)
+    for (int i = 0; i < 50; i++)
         _spawn_asteroid();
 }
 
@@ -184,6 +249,8 @@ static void check_player_collisions(int32 cell_x, int32 cell_y)
         if (distance <= player_size / 2 + a->size)
         {
             player_health--;
+            if (player_health <= 0)
+                run_current_scene = 0;
             is_player_vulnerable = 0;
             player_vulnerable_event1();
             add_event(player_invulnerable_end, player_invulnerable_duration);
@@ -277,25 +344,19 @@ static void iterate_cells_graphics()
             for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
             {
                 Asteroid* a_data = (Asteroid*)i->data;
-                uint8 color = 6;
+                uint8 color;
                 if (a_data->damaged)
                 {
                     color = 0x0F;
                     a_data->damaged = 0;
                 }
+                else if (a_data->strong)
+                    color = 0x18;
+                else 
+                    color = 6;
 
                 if (!isInCamera(a_data->pos, a_data->size * ASTEROID_SIZE_MAX))
                     continue;
-
-                //vec first_pos = { a_data->pos.x - camera_pos.x + a_data->verticies[0].x, a_data->pos.y - camera_pos.y + a_data->verticies[0].y };
-                //vec next_pos = first_pos;
-                //for (int i = 1; i < a_data->verticies_count; i++)
-                //{
-                //    vec pos = { a_data->pos.x - camera_pos.x + a_data->verticies[i].x, a_data->pos.y - camera_pos.y + a_data->verticies[i].y };
-                //    drawLines(pos.x, pos.y, next_pos.x, next_pos.y, color);
-                //    next_pos = pos;
-                //}
-                //drawLines(first_pos.x, first_pos.y, next_pos.x, next_pos.y, color);
 
                 float step = 2 * PI / a_data->verticies_count;
                 vec vert_temp_pos = { cos(a_data->angle) * a_data->verticies[0], sin(a_data->angle) * a_data->verticies[0] };
@@ -338,7 +399,7 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
                 list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
                 asteroid_delete(a); // TODO
                 score++;
-                if (score % 100 == 0)
+                if (score % 80 == 0)
                     player_health = min(3, player_health + 1);
                 i = i_next;
             }
@@ -466,11 +527,14 @@ static void display_ui()
 }
 
 void game_init() {
+    dbg_printf("Game init\n");
+    init_values();
     player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.023); 
-    map_constructor(&map, (ivec){ 0, 0 }, 80, 20);
+    map_constructor(&map, (ivec){ 0, 0 }, 60, 30);
     init_stars();
 
     add_event(spawn_asteroids, asteroid_spawn_time);
+    add_event(increase_difficulty1, increase_difficulty_time1);
     camera_pos.x = -(int32)screen_width / 2;
     camera_pos.y = -(int32)screen_height / 2;
     spawn_start_asteroids();
@@ -478,7 +542,7 @@ void game_init() {
 
 void game_input() {
     player_input();
-    if (key_press(SC_ESCAPE)) run = 0;
+    if (key_press(SC_ESCAPE)) run_current_scene = 0;
 }
 
 void game_logic() {
@@ -494,7 +558,16 @@ void game_graphics() {
     display_ui();
 }
 
-void game_destruct() {
+struct Scene game_destruct() {
     map_destructor(&map);
     destruct_stars();
+    clear_events();
+
+    return (struct Scene) {
+        gameover_init,
+        gameover_input,
+        gameover_logic,
+        gameover_graphics,
+        gameover_destruct,
+    };
 }

@@ -7,12 +7,15 @@
 #include "drivers/timer.h"
 #include "drivers/keyboard.h"
 #include "game_logic/game.h"
+#include "game_logic/scene.h"
+#include "game_logic/menu.h"
 
 static void timer_callback();
 static void kb_callback(uint8 scancode, char* ascii, uint8 released);
 static void calculate_delay(uint32 delay, uint32 start_tick, uint32 end_tick);
 
 uint8 run = 1;
+uint8 run_current_scene = 1;
 
 void kmain()
 {
@@ -25,25 +28,38 @@ void kmain()
     set_keyboard_callback(kb_callback);
     init_keyboard();
     srand(trand());
-    game_init();
     asm volatile("sti");
-    
+
+    clearScreen(0x00);
+
+    struct Scene scene = {
+        menu_init,
+        menu_input,
+        menu_logic,
+        menu_graphics,
+        menu_destruct,
+    };
+
     while (run)
     {
-        uint32 start_tick = tick;
+        scene.init();
+        while (run_current_scene)
+        {
+            uint32 start_tick = tick;
 
-        //clearScreen(0x00);
-        game_input();
-        update_key_flags();
-        game_logic();
-        game_graphics();
-        flip();
-
-        uint32 end_tick = tick;
-        calculate_delay(1, start_tick, end_tick);
+            scene.input();
+            update_key_flags();
+            scene.logic();
+            scene.graphics();
+            flip();
+            uint32 end_tick = tick;
+            calculate_delay(1, start_tick, end_tick);
+        }
+        scene = scene.destruct();
+        run_current_scene = 1;
     }
+
     asm volatile("cli");
-    game_destruct();
     destruct_keyboard();
     destruct_timer();
     malloc_destruct();

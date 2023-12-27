@@ -9,3 +9,4 @@ void destruct_timer();
 void wait(uint32 ticks);
 
 void add_event(void(*event)(), uint32 ticks);
+void clear_events();

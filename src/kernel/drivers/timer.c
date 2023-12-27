@@ -74,9 +74,7 @@ static void delete_event(Event* data) {
 void destruct_timer()
 {
     initialized = 0;
-    //dbg_printf("Destructing timer\n");
     list_destructor(&events, delete_event);
-    //dbg_printf("Destructed\n");
 }
 
 void wait(uint32 ticks)
@@ -96,8 +94,18 @@ void wait(uint32 ticks)
 }
 
 void add_event(void(*event)(), uint32 ticks) {
+    initialized = 0;
     Event* e = malloc(sizeof(Event));
     e->ticks_number = ticks;
     e->event = event;
     list_push_back(&events, e);
+    initialized = 1;
+}
+
+void clear_events()
+{
+    initialized = 0;
+    list_destructor(&events, delete_event);
+    list_constructor(&events);
+    initialized = 1;
 }
