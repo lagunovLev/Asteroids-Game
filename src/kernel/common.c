@@ -132,16 +132,16 @@ void memcpy(uint8* dest, uint8* src, uint32 size)
     }
 }
 
-uint8* header_start;
-uint8* heap_start;
-uint32 heap_size;
-uint32 header_size;
-uint32 pages;
-uint32 page_size;
-uint32 cur_page;
-uint8 reached_limit;
-uint32 malloc_calls = 0;
-uint32 free_calls = 0;
+static uint8* header_start;
+static uint8* heap_start;
+static uint32 heap_size;
+static uint32 header_size;
+static uint32 pages;
+static uint32 page_size;
+static uint32 cur_page;
+static uint8 reached_limit;
+static uint32 malloc_calls = 0;
+static uint32 free_calls = 0;
 
 static uint8 check_free_pages(uint32 pages_occupies, uint32* next_page)
 {
@@ -214,6 +214,7 @@ void* malloc(uint32 n)
     *addr = 1;
     *((uint32*)(addr + 1)) = pages_occupies;
     //dbg_printf("Allocating memory. Addres: %x. Pages number: %d. Start page: %d. Allocated bytes: %d\n", addr, pages_occupies, start_page, n - 5);
+    //memset(addr + 5, n - 5, 0);
     return addr + 5;
 }
 

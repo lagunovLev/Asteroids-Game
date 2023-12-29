@@ -4,7 +4,7 @@ CC=/usr/local/i386elfgcc/bin/i386-elf-gcc
 LD=/usr/local/i386elfgcc/bin/i386-elf-ld
 
 LINKFLAGS=-T src/link.ld --oformat binary
-CFLAGS=-ffreestanding -Wall -c -Os -fpic -fno-pie -mno-red-zone -std=gnu18 
+CFLAGS=-ffreestanding -Wall -c -O3 -fpic -fno-pie -mno-red-zone -std=gnu18 
 
 all: run
 

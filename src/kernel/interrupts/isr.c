@@ -2,6 +2,8 @@
 #include "isr.h"
 #include "../drivers/video.h"
 #include "../drivers/font.h"
+#include "../drivers/keyboard.h"
+#include "../debug.h"
 
 const char* exception_messages[] = 
 {
@@ -82,10 +84,11 @@ volatile void kpanic(regs* r)
     if (r->int_no < 32)
     {
         clearScreen(0x00);
-		putString(0, 0, 0x0C, "%s%s\n\r%s", exception, exception_messages[r->int_no], "System halted");
-        //putString(0, 0, 0x0C, exception);
-        //putString(sizeof(exception) * char_width, 0, 0x0C, exception_messages[r->int_no]);
-        //putString(0, 1 + char_height, 0x0C, "System halted");
+		//putString(0, 0, 0x0C, "%s%s", exception, exception_messages[r->int_no]);
+        
+		dbg_printf("%s%s", exception, exception_messages[r->int_no]);
+		view_logs(1);
+
 		flip();
 		asm volatile("cli");
         while (1)

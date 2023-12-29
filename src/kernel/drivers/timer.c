@@ -3,6 +3,7 @@
 #include "video.h"
 #include "../interrupts/irq.h"
 #include "../util/list.h"
+#include "video.h"
 
 volatile void(*timer_callback)() = 0;
 volatile uint32 tick = 0;
@@ -21,7 +22,15 @@ void set_timer_callback(void (*callback)()) {
 volatile static void handler(regs *r)
 {
     if (!initialized)
+    {
+        //while (1)
+        //{
+        //    clearScreen(0x00);
+        //    putString(0, 0, 0x0F, "BRUH");
+        //    asm volatile("hlt");
+        //}
         return;
+    }
     timer_callback();
     tick++;
 

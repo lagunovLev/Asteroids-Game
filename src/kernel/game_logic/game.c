@@ -33,6 +33,7 @@ uint8 reloading;
 float strong_asteroid_chance;
 float bullet_speed;
 float bullet_damage;
+float asteroid_min_volume;
 
 int32 increase_difficulty_time1;
 int32 increase_difficulty_time2;
@@ -41,13 +42,13 @@ int32 increase_difficulty_time4;
 
 static void init_values()
 {
-    asteroid_spawn_time = 120;
+    asteroid_spawn_time = 140; 
     border_pushing = 0.08f;
     border_width_cells = 2;
-    asteroid_min_size = 5;
+    asteroid_min_size = 7;
     asteroid_max_size = 18;
     player_health = 3;
-    player_size = 6;
+    player_size = 7;
     is_player_vulnerable = 1;
     player_damage_blinking_freq = 8;
     player_invulnerable_duration = 120;
@@ -59,6 +60,7 @@ static void init_values()
     strong_asteroid_chance = 0;
     bullet_speed = 2.5;
     bullet_damage = 100;
+    asteroid_min_volume = asteroid_min_size * asteroid_min_size * PI;
 
     increase_difficulty_time1 = 2000;
     increase_difficulty_time2 = 3500;
@@ -68,14 +70,14 @@ static void init_values()
 
 static void increase_difficulty4()
 {
-    asteroid_spawn_time = 50;
+    asteroid_spawn_time = 90;
     strong_asteroid_chance = 1;
     dbg_printf("Increased difficulty!\n");
 }
 
 static void increase_difficulty3()
 {
-    asteroid_spawn_time = 60;
+    asteroid_spawn_time = 95;
     strong_asteroid_chance = 0.7;
     add_event(increase_difficulty4, increase_difficulty_time4);
     dbg_printf("Increased difficulty!\n");
@@ -83,7 +85,7 @@ static void increase_difficulty3()
 
 static void increase_difficulty2()
 {
-    asteroid_spawn_time = 75;
+    asteroid_spawn_time = 105;
     strong_asteroid_chance = 0.4;
     add_event(increase_difficulty3, increase_difficulty_time3);
     dbg_printf("Increased difficulty!\n");
@@ -91,9 +93,14 @@ static void increase_difficulty2()
 
 static void increase_difficulty1()
 {
-    asteroid_spawn_time = 100;
+    asteroid_spawn_time = 120;
     add_event(increase_difficulty2, increase_difficulty_time2);
     dbg_printf("Increased difficulty!\n");
+}
+
+static void increase_difficulty0()
+{
+    add_event(increase_difficulty1, increase_difficulty_time1);
 }
 
 static uint8 isInCamera(vec pos, float object_size)
@@ -114,7 +121,7 @@ static void _spawn_asteroid()
     vec pos = { x, y };
     uint8 strong = rand_float(0, 1) < strong_asteroid_chance ? 1 : 0; 
 
-    float speed = rand_float(0.08, 0.8);
+    float speed = rand_float(0.1, 1.0);
     float angle = rand_float(0.0, 2 * PI);
     vec velocity = { cos(angle) * speed, sin(angle) * speed };
 
@@ -383,6 +390,51 @@ static void iterate_cells_graphics()
     }
 }
 
+static void destroy_asteroid(Asteroid* a)
+{
+    float volume = a->size * a->size * PI;
+    volume *= 0.8;
+    float mass = volume;
+    if (a->strong)
+        mass *= 2;
+
+    if (volume > asteroid_min_volume * 2)
+    {
+        float volume1 = rand_float(asteroid_min_volume, volume - asteroid_min_volume);
+        float volume2 = volume - volume1;
+        float size1 = sqrt(volume1 / PI);
+        float size2 = sqrt(volume2 / PI);
+        float mass1 = volume1;
+        float mass2 = volume2;
+        if (a->strong)
+        {
+            mass1 *= 2;
+            mass2 *= 2;
+        }
+
+        float impulse_x = a->velocity.x * mass;
+        float impulse_y = a->velocity.y * mass;
+
+        float impulse_x1 = rand_float(impulse_x / 4, impulse_x);
+        float impulse_y1 = rand_float(impulse_y / 4, impulse_y);
+        float impulse_x2 = impulse_x - impulse_x1;
+        float impulse_y2 = impulse_y - impulse_y1;
+
+        float velocity_x1 = impulse_x1 / mass1;
+        float velocity_x2 = impulse_x2 / mass2;
+        float velocity_y1 = impulse_y1 / mass1;
+        float velocity_y2 = impulse_y2 / mass2;
+
+        //vec pos1 = vec_sum(a->pos, vec_mul(vec_norm((vec){ velocity_x1, velocity_y1 }), a->size));
+        //vec pos2 = vec_sum(a->pos, vec_mul(vec_norm((vec){ velocity_x2, velocity_y2 }), a->size));
+        vec pos1 = vec_sum(a->pos, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
+        vec pos2 = vec_sum(a->pos, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
+
+        map_push_asteroid(&map, asteroid_new(pos1, (vec){ velocity_x1, velocity_y1 }, (vec){ 0, 0 }, size1, a->strong));
+        map_push_asteroid(&map, asteroid_new(pos2, (vec){ velocity_x2, velocity_y2 }, (vec){ 0, 0 }, size2, a->strong));
+    }
+}
+
 static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
 {
     uint8 collided = 0;
@@ -397,9 +449,10 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
             {
                 list_elem* i_next = i->next;
                 list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
+                destroy_asteroid(a);
                 asteroid_delete(a); // TODO
                 score++;
-                if (score % 80 == 0)
+                if (score % 100 == 0)
                     player_health = min(3, player_health + 1);
                 i = i_next;
             }
@@ -503,8 +556,9 @@ static void iterate_cells_logic()
                 {
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
-                    map_push_bullet(&map, b);
+                    uint8 pushed = map_push_bullet(&map, b);
                     i = i_next;
+                    //dbg_printf("Pushed bullet\n");
                 }
                 else i = i->next;
             }
@@ -534,7 +588,7 @@ void game_init() {
     init_stars();
 
     add_event(spawn_asteroids, asteroid_spawn_time);
-    add_event(increase_difficulty1, increase_difficulty_time1);
+    increase_difficulty0();
     camera_pos.x = -(int32)screen_width / 2;
     camera_pos.y = -(int32)screen_height / 2;
     spawn_start_asteroids();

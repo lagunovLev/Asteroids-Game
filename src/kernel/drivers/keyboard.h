@@ -8,6 +8,8 @@
 #define SC_SPACE 0x39
 #define SC_ENTER 0x1C
 #define SC_ESCAPE 1
+#define SC_LEFT 75
+#define SC_RIGHT 77
 
 void init_keyboard();
 void destruct_keyboard();

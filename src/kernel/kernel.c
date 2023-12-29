@@ -28,6 +28,7 @@ void kmain()
     set_keyboard_callback(kb_callback);
     init_keyboard();
     srand(trand());
+    init_debug();
     asm volatile("sti");
 
     clearScreen(0x00);
@@ -59,9 +60,11 @@ void kmain()
         run_current_scene = 1;
     }
 
+    view_logs(0);
     asm volatile("cli");
-    destruct_keyboard();
     destruct_timer();
+    destruct_debug();
+    destruct_keyboard();
     malloc_destruct();
 }
 

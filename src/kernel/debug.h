@@ -2,35 +2,23 @@
 #include "io/ports.h"
 #include <stdarg.h>
 #include "common.h"
+#include "util/list.h"
+#include "drivers/video.h"
 
 #define ENABLE_DEBUG 1
+#define PAGE_WIDTH 40
+#define PAGE_HEIGHT 23
 
-static inline void dbg_putc(char c)
+typedef struct TextPage
 {
-#if ENABLE_DEBUG
-    outb(0xE9, c);
-#endif
-}
+    char text[PAGE_WIDTH][PAGE_HEIGHT];
+} TextPage;
 
-static inline void dbg_puts(char* str)
-{
-#if ENABLE_DEBUG
-    while (*str)
-    {
-        dbg_putc(*str);
-        str++;
-    }
-#endif
-}
+void init_debug();
+void destruct_debug();
 
-static inline void dbg_printf(char* format, ...)
-{
-#if ENABLE_DEBUG
-    va_list arg_ptr;
-    va_start(arg_ptr, format);
-    char buf[256] = { 0 };
-    vsprintf(buf, format, arg_ptr);
-    dbg_puts(buf);
-    va_end(arg_ptr);
-#endif
-}
+void dbg_putc(char c);
+void dbg_puts(char* str);
+void dbg_printf(char* format, ...);
+
+void view_logs(uint8 start);
