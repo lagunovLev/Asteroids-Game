@@ -5,7 +5,7 @@
 #include "util/list.h"
 #include "drivers/video.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #define PAGE_WIDTH 40
 #define PAGE_HEIGHT 23
 

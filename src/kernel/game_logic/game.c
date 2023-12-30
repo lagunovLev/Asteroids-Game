@@ -28,7 +28,7 @@ int32 player_invulnerable_duration;
 uint32 player_color;
 uint32 ui_color;
 int32 score;
-uint32 shoot_cooldown;
+int32 shoot_cooldown;
 uint8 reloading;
 float strong_asteroid_chance;
 float bullet_speed;
@@ -39,6 +39,7 @@ int32 increase_difficulty_time1;
 int32 increase_difficulty_time2;
 int32 increase_difficulty_time3;
 int32 increase_difficulty_time4;
+int32 increase_difficulty_time5;
 
 static void init_values()
 {
@@ -66,12 +67,21 @@ static void init_values()
     increase_difficulty_time2 = 3500;
     increase_difficulty_time3 = 5000;
     increase_difficulty_time4 = 6500;
+    increase_difficulty_time5 = 8000;
+}
+
+static void increase_difficulty5()
+{
+    asteroid_spawn_time = 80;
+    strong_asteroid_chance = 1;
+    dbg_printf("Increased difficulty!\n");
 }
 
 static void increase_difficulty4()
 {
     asteroid_spawn_time = 90;
     strong_asteroid_chance = 1;
+    add_event(increase_difficulty5, increase_difficulty_time5);
     dbg_printf("Increased difficulty!\n");
 }
 
@@ -121,7 +131,7 @@ static void _spawn_asteroid()
     vec pos = { x, y };
     uint8 strong = rand_float(0, 1) < strong_asteroid_chance ? 1 : 0; 
 
-    float speed = rand_float(0.1, 1.0);
+    float speed = rand_float(0.08, 0.9);
     float angle = rand_float(0.0, 2 * PI);
     vec velocity = { cos(angle) * speed, sin(angle) * speed };
 
@@ -214,7 +224,7 @@ static void reloading_end()
 
 static void shoot()
 {
-    float a = player.rotation_angle + rand_float(-0.04, 0.04);
+    float a = player.rotation_angle + rand_float(-0.05, 0.05);
     float p_x = player.pos.x + cos(player.rotation_angle) * player_size;
     float p_y = player.pos.y + sin(player.rotation_angle) * player_size;
     float v_x = cos(a) * bullet_speed;
@@ -267,6 +277,7 @@ static void check_player_collisions(int32 cell_x, int32 cell_y)
 
 static void player_logic()
 {
+    dbg_printf("Start player logic\n");
     player.pos.x += player.velocity.x;
     player.pos.y += player.velocity.y;
 
@@ -324,6 +335,7 @@ static void player_logic()
         if (right && bottom)
             check_player_collisions(cell_player_x + 1, cell_player_y + 1);
     }
+    dbg_printf("End player logic\n");
 }
 
 static void player_graphics()
@@ -450,10 +462,16 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
                 list_elem* i_next = i->next;
                 list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
                 destroy_asteroid(a);
-                asteroid_delete(a); // TODO
+                asteroid_delete(a); 
                 score++;
                 if (score % 100 == 0)
+                {
                     player_health = min(3, player_health + 1);
+                    if (score % 400 == 0)
+                    {
+                        shoot_cooldown = max(0, shoot_cooldown - 1);
+                    }
+                }
                 i = i_next;
             }
             else i = i->next;
@@ -466,10 +484,12 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
 
 static void iterate_cells_logic()
 {
+    dbg_printf("Start cells logic\n");
     for (int cell_x = 0; cell_x < map.side_size; cell_x++)
     {
         for (int cell_y = 0; cell_y < map.side_size; cell_y++)
         {
+            //dbg_printf("A %d %d ", cell_x, cell_y);
             for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL;)
             {
                 Asteroid* a_data = (Asteroid*)i->data;
@@ -492,13 +512,16 @@ static void iterate_cells_logic()
                 c_y /= map.cell_size;
                 if (c_x != cell_x || c_y != cell_y)
                 {
+                    dbg_printf("Moving asteroid\n");
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
                     map_push_asteroid(&map, a_data);
                     i = i_next;
+                    dbg_printf("Asteroid moved\n");
                 }
                 else i = i->next;
             }
+            //dbg_printf("B ");
             for (list_elem* i = map.cells[cell_x][cell_y].bullets.begin; i != NULL;)
             {
                 Bullet* b = i->data;
@@ -541,29 +564,42 @@ static void iterate_cells_logic()
 
                 if (collided)
                 {
+                    dbg_printf("Bullet collision start\n");
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
                     bullet_delete(b);
                     i = i_next;
+                    dbg_printf("Bullet collision end\n");
                     continue;
                 }
 
                 int32 c_x = b->pos.x - map.corner00_pos.x;
                 c_x /= map.cell_size;
                 int32 c_y = b->pos.y - map.corner00_pos.y;
-                c_y /= map.cell_size;
+                c_y /= map.cell_size; 
+                if (!((c_x > border_width_cells - 1 && c_x < map.side_size - border_width_cells) && 
+                      (c_y > border_width_cells - 1 && c_y < map.side_size - border_width_cells)))
+                {
+                    list_elem* i_next = i->next;
+                    list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
+                    i = i_next;
+                    continue;
+                }
                 if (c_x != cell_x || c_y != cell_y)
                 {
+                    dbg_printf("Moving bullet\n");
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
                     uint8 pushed = map_push_bullet(&map, b);
                     i = i_next;
-                    //dbg_printf("Pushed bullet\n");
+                    dbg_printf("bullet moved\n");
                 }
                 else i = i->next;
             }
+            //dbg_printf("E  ");
         }
     }
+    dbg_printf("End cells logic\n");
 } 
 
 static void display_ui()
@@ -595,17 +631,20 @@ void game_init() {
 }
 
 void game_input() {
+    dbg_printf("Start game input\n");
     player_input();
     if (key_press(SC_ESCAPE)) run_current_scene = 0;
 }
 
 void game_logic() {
+    dbg_printf("Start game logic\n");
     player_logic();
     iterate_cells_logic();
     stars_logic();
 }
 
 void game_graphics() {
+    dbg_printf("Start game graphics\n");
     stars_graphics();
     iterate_cells_graphics();
     player_graphics();

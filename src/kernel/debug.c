@@ -8,7 +8,8 @@ void init_debug()
 {
     list_constructor(&pages);
     TextPage* page = malloc(sizeof(TextPage));
-    memset(page->text, PAGE_HEIGHT * PAGE_WIDTH, '\0');
+    for (int i = 0; i < PAGE_WIDTH; i++)
+        memset(page->text[i], 0, PAGE_HEIGHT);
     list_push_back(&pages, page);
 }
 
@@ -26,8 +27,16 @@ void view_logs(uint8 start)
 {
     uint8 run = 1;
     list_elem* i;
-    if (start) i = pages.end;
-    else i = pages.begin;
+    uint32 cur_page;
+    if (start) {
+        i = pages.end;
+        cur_page = pages.size - 1;
+    }
+    else { 
+        i = pages.begin;
+        cur_page = 0;
+    }
+
     while (run)
     {
         clearScreen(0x00);
@@ -39,26 +48,31 @@ void view_logs(uint8 start)
                 putChar(x * char_width, y * char_height, page->text[x][y], 0x0F);
             }
         }
-        putString(0, (PAGE_HEIGHT + 1) * char_height, 0x0F, "Arrows - flip pages\tEnter - exit");
+        putString(0, (PAGE_HEIGHT + 1) * char_height, 0x0F, "Arrows - flip pages  Enter - exit  %d", cur_page);
         flip();
 
-        while (1)
+        uint8 r = 1;
+        while (r)
         {
+            wait(2);
             if (key_press(SC_LEFT) && (i->prev != NULL))
             {
                 i = i->prev;
-                break;
+                r = 0;
+                cur_page--;
             }
             if (key_press(SC_RIGHT) && (i->next != NULL))
             {
                 i = i->next;
-                break;
+                r = 0;
+                cur_page++;
             }
             if (key_press(SC_ENTER))
             {
                 run = 0;
-                break;
+                r = 0;
             }
+            update_key_flags();
         }
     }
 }
@@ -88,7 +102,8 @@ inline void dbg_putc(char c)
     if (y >= PAGE_HEIGHT)
     {
         TextPage* page = malloc(sizeof(TextPage));
-        memset(page->text, PAGE_HEIGHT * PAGE_WIDTH, '\0');
+        for (int i = 0; i < PAGE_WIDTH; i++)
+            memset(page->text[i], 0, PAGE_HEIGHT);
         list_push_back(&pages, page);
         y = 0;
         x = 0;
