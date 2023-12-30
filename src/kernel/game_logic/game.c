@@ -44,12 +44,12 @@ int32 increase_difficulty_time5;
 static void init_values()
 {
     asteroid_spawn_time = 140; 
-    border_pushing = 0.08f;
+    border_pushing = 0.09f;
     border_width_cells = 2;
-    asteroid_min_size = 7;
+    asteroid_min_size = 6;
     asteroid_max_size = 18;
     player_health = 3;
-    player_size = 7;
+    player_size = 6;
     is_player_vulnerable = 1;
     player_damage_blinking_freq = 8;
     player_invulnerable_duration = 120;
@@ -131,7 +131,7 @@ static void _spawn_asteroid()
     vec pos = { x, y };
     uint8 strong = rand_float(0, 1) < strong_asteroid_chance ? 1 : 0; 
 
-    float speed = rand_float(0.08, 0.9);
+    float speed = rand_float(0.08, 0.8);
     float angle = rand_float(0.0, 2 * PI);
     vec velocity = { cos(angle) * speed, sin(angle) * speed };
 
@@ -287,8 +287,8 @@ static void player_logic()
     camera_pos.x = dmin(camera_pos.x, map.corner11_pos.x - border_width_cells * map.cell_size - (int32)screen_width);
     camera_pos.y = dmin(camera_pos.y, map.corner11_pos.y - border_width_cells * map.cell_size - (int32)screen_height);
 
-    player.velocity.x *= 0.987;
-    player.velocity.y *= 0.987;
+    player.velocity.x *= 0.99;
+    player.velocity.y *= 0.99;
 
     if (player.pos.x < map.corner00_pos.x + border_width_cells * map.cell_size)
         player.velocity.x += border_pushing;
@@ -467,7 +467,7 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
                 if (score % 100 == 0)
                 {
                     player_health = min(3, player_health + 1);
-                    if (score % 400 == 0)
+                    if (score % 300 == 0)
                     {
                         shoot_cooldown = max(0, shoot_cooldown - 1);
                     }
@@ -619,7 +619,7 @@ static void display_ui()
 void game_init() {
     dbg_printf("Game init\n");
     init_values();
-    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.023); 
+    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.026); 
     map_constructor(&map, (ivec){ 0, 0 }, 60, 30);
     init_stars();
 
