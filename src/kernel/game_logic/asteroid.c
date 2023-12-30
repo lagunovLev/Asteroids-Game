@@ -22,7 +22,7 @@ void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleratio
     this->strong = strong;
     this->size = size;
     this->damaged = 0;
-    this->verticies_count = size * PI / 3;
+    this->verticies_count = size * PI / 2.3;
     this->angle = 0;
     this->rotation_speed = rand_float(-0.02, 0.02);
     if (this->verticies_count % 2 != 0) this->verticies_count++;
