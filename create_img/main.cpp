@@ -81,14 +81,14 @@ int main(int argc, char* argv[])
             mbr.boot_code[i] = 0;
     }
 
-    //mbr.partition[0] = {
-    //    .boot_indicator = 0x80,
-    //    .starting_chs = { 0x00, 0x00, 0x02 },
-    //    .os_type = 0xEE,
-    //    .ending_chs = { 0b11111110, 0b11111011, 0b11111110 },
-    //    .starting_lba = 0x00000001,
-    //    .size_lbas = 0x00000400,
-    //};
+    mbr.partition[0] = {
+        .boot_indicator = 0x80,
+        .starting_chs = { 0x00, 0x00, 0x02 },
+        .os_type = 0xEE,
+        .ending_chs = { 0b11111110, 0b11111011, 0b11111110 },
+        .starting_lba = 0x00000001,
+        .size_lbas = 0x00000400,
+    };
 
     ofstream output(dir + output_file_name, ios::binary | ios::out);
     output.write((char*)&mbr, sizeof(mbr));
