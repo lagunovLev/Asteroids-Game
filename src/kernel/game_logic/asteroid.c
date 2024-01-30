@@ -44,7 +44,7 @@ void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleratio
 
     this->size *= average_size;
     this->size *= 1.2;
-    this->health = PI * this->size * this->size;
+    this->health = 2.5 * this->size * this->size;
     if (this->strong)
         this->health *= 2;
 }
