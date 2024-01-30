@@ -9,7 +9,7 @@ void init_stars()
     starfield = malloc(screen_width * screen_height);
     for (uint32 i = 0; i < screen_width * screen_height; i++)
     {
-        uint8 r = rand_int(0, 120);
+        uint8 r = rand_int(0, 150);
         starfield[i] = (r == 0 ? 0x0F : 0);
     }
     stars_pos.x = 0;
