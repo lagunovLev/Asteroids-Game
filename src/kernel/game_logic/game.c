@@ -225,8 +225,8 @@ static void reloading_end()
 static void shoot()
 {
     float a = player.rotation_angle + rand_float(-0.05, 0.05);
-    float p_x = player.pos.x + cos(player.rotation_angle) * player_size;
-    float p_y = player.pos.y + sin(player.rotation_angle) * player_size;
+    float p_x = player.position_current.x + cos(player.rotation_angle) * player_size;
+    float p_y = player.position_current.y + sin(player.rotation_angle) * player_size;
     float v_x = cos(a) * bullet_speed;
     float v_y = sin(a) * bullet_speed;
     map_push_bullet(&map, bullet_new((vec){ p_x, p_y }, (vec){ v_x, v_y }, (vec){ 0, 0 }));
@@ -237,13 +237,13 @@ static void player_input()
 {
     if (!key_none(SC_W))
     {
-        player.velocity.x += cos(player.rotation_angle) * player.speed;
-        player.velocity.y += sin(player.rotation_angle) * player.speed;
+        player.acceleration.x += cos(player.rotation_angle) * player.speed;
+        player.acceleration.y += sin(player.rotation_angle) * player.speed;
     }
     if (!key_none(SC_S))
     {
-        player.velocity.x -= cos(player.rotation_angle) * player.speed;
-        player.velocity.y -= sin(player.rotation_angle) * player.speed;
+        player.acceleration.x -= cos(player.rotation_angle) * player.speed;
+        player.acceleration.y -= sin(player.rotation_angle) * player.speed;
     }
     if (!key_none(SC_A))
         player.rotation_angle -= 0.09;
@@ -262,7 +262,7 @@ static void check_player_collisions(int32 cell_x, int32 cell_y)
     for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
     {
         Asteroid* a = i->data;
-        float distance = vec_distance(a->pos, player.pos);
+        float distance = vec_distance(a->position_current, player.position_current);
         if (distance <= player_size / 2 + a->size)
         {
             player_health--;
@@ -277,51 +277,50 @@ static void check_player_collisions(int32 cell_x, int32 cell_y)
 
 static void player_logic()
 {
-    dbg_printf("Start player logic\n");
-    player.pos.x += player.velocity.x;
-    player.pos.y += player.velocity.y;
+    if (player.position_current.x < map.corner00_pos.x + border_width_cells * map.cell_size)
+        player.acceleration.x += border_pushing;
+    if (player.position_current.y < map.corner00_pos.y + border_width_cells * map.cell_size)
+        player.acceleration.y += border_pushing;
+    if (player.position_current.x > map.corner11_pos.x - border_width_cells * map.cell_size)
+        player.acceleration.x -= border_pushing;
+    if (player.position_current.y > map.corner11_pos.y - border_width_cells * map.cell_size)
+        player.acceleration.y -= border_pushing;
 
-    camera_pos = vec_sub(player.pos, (vec){ screen_width / 2, screen_height / 2 });
+    vec velocity = player_velocity(&player);
+    velocity = vec_mul(velocity, 0.99);
+    player.position_old = player.position_current;
+    player.position_current = vec_sum(player.position_current, vec_sum(velocity, player.acceleration));
+    player.acceleration = (vec){ 0, 0 };
+
+    camera_pos = vec_sub(player.position_current, (vec){ screen_width / 2, screen_height / 2 });
     camera_pos.x = dmax(camera_pos.x, map.corner00_pos.x + border_width_cells * map.cell_size);
     camera_pos.y = dmax(camera_pos.y, map.corner00_pos.y + border_width_cells * map.cell_size);
     camera_pos.x = dmin(camera_pos.x, map.corner11_pos.x - border_width_cells * map.cell_size - (int32)screen_width);
     camera_pos.y = dmin(camera_pos.y, map.corner11_pos.y - border_width_cells * map.cell_size - (int32)screen_height);
 
-    player.velocity.x *= 0.99;
-    player.velocity.y *= 0.99;
-
-    if (player.pos.x < map.corner00_pos.x + border_width_cells * map.cell_size)
-        player.velocity.x += border_pushing;
-    if (player.pos.y < map.corner00_pos.y + border_width_cells * map.cell_size)
-        player.velocity.y += border_pushing;
-    if (player.pos.x > map.corner11_pos.x - border_width_cells * map.cell_size)
-        player.velocity.x -= border_pushing;
-    if (player.pos.y > map.corner11_pos.y - border_width_cells * map.cell_size)
-        player.velocity.y -= border_pushing;
-
     if (is_player_vulnerable) {
-        int32 cell_player_x = (player.pos.x - map.corner00_pos.x) / map.cell_size;
-        int32 cell_player_y = (player.pos.y - map.corner00_pos.y) / map.cell_size;
+        int32 cell_player_x = (player.position_current.x - map.corner00_pos.x) / map.cell_size;
+        int32 cell_player_y = (player.position_current.y - map.corner00_pos.y) / map.cell_size;
 
         check_player_collisions(cell_player_x, cell_player_y);
         uint8 left = 0, right = 0, top = 0, bottom = 0;
         float a_size = asteroid_max_size * ASTEROID_SIZE_MAX;
-        if (player.pos.x - map.corner00_pos.x - map.cell_size * cell_player_x <= a_size)
+        if (player.position_current.x - map.corner00_pos.x - map.cell_size * cell_player_x <= a_size)
         {
             left = 1;
             check_player_collisions(cell_player_x - 1, cell_player_y);
         }
-        if (player.pos.y - map.corner00_pos.y - map.cell_size * cell_player_y <= a_size)
+        if (player.position_current.y - map.corner00_pos.y - map.cell_size * cell_player_y <= a_size)
         {
             top = 1;
             check_player_collisions(cell_player_x, cell_player_y - 1);
         }
-        if (map.corner00_pos.x + map.cell_size * (cell_player_x + 1) - player.pos.x <= a_size)
+        if (map.corner00_pos.x + map.cell_size * (cell_player_x + 1) - player.position_current.x <= a_size)
         {
             right = 1;
             check_player_collisions(cell_player_x + 1, cell_player_y);
         }
-        if (map.corner00_pos.y + map.cell_size * (cell_player_y + 1) - player.pos.y <= a_size)
+        if (map.corner00_pos.y + map.cell_size * (cell_player_y + 1) - player.position_current.y <= a_size)
         {
             bottom = 1;
             check_player_collisions(cell_player_x, cell_player_y + 1);
@@ -335,12 +334,11 @@ static void player_logic()
         if (right && bottom)
             check_player_collisions(cell_player_x + 1, cell_player_y + 1);
     }
-    dbg_printf("End player logic\n");
 }
 
 static void player_graphics()
 {
-    vec player_pos = vec_sub(player.pos, camera_pos);
+    vec player_pos = vec_sub(player.position_current, camera_pos);
     double t = 2.09;
     vec point1 = vec_sum(player_pos, (vec){ cos(player.rotation_angle) * player_size, sin(player.rotation_angle) * player_size });
     vec point2 = vec_sum(player_pos, (vec){ cos(player.rotation_angle - t) * player_size / 2, sin(player.rotation_angle - t) * player_size / 2 });
@@ -374,19 +372,19 @@ static void iterate_cells_graphics()
                 else 
                     color = 6;
 
-                if (!isInCamera(a_data->pos, a_data->size * ASTEROID_SIZE_MAX))
+                if (!isInCamera(a_data->position_current, a_data->size * ASTEROID_SIZE_MAX))
                     continue;
 
                 float step = 2 * PI / a_data->verticies_count;
                 vec vert_temp_pos = { cos(a_data->angle) * a_data->verticies[0], sin(a_data->angle) * a_data->verticies[0] };
-                vert_temp_pos = vec_sum(a_data->pos, vert_temp_pos);
+                vert_temp_pos = vec_sum(a_data->position_current, vert_temp_pos);
                 vert_temp_pos = vec_sub(vert_temp_pos, camera_pos);
                 vec first_pos = vert_temp_pos;
                 for (int i = 1; i < a_data->verticies_count; i++)
                 {
                     float angle = step * i + a_data->angle;
                     vec vert_pos = { cos(angle) * a_data->verticies[i], sin(angle) * a_data->verticies[i] };
-                    vert_pos = vec_sum(a_data->pos, vert_pos);
+                    vert_pos = vec_sum(a_data->position_current, vert_pos);
                     vert_pos = vec_sub(vert_pos, camera_pos);
                     drawLines(vert_temp_pos.x, vert_temp_pos.y, vert_pos.x, vert_pos.y, color);
                     vert_temp_pos = vert_pos;
@@ -424,8 +422,10 @@ static void destroy_asteroid(Asteroid* a)
             mass2 *= 2;
         }
 
-        float impulse_x = a->velocity.x * mass;
-        float impulse_y = a->velocity.y * mass;
+        vec velocity = asteroid_velocity(a);
+
+        float impulse_x = velocity.x * mass; 
+        float impulse_y = velocity.y * mass;
 
         float impulse_x1 = rand_float(impulse_x / 4, impulse_x);
         float impulse_y1 = rand_float(impulse_y / 4, impulse_y);
@@ -437,10 +437,8 @@ static void destroy_asteroid(Asteroid* a)
         float velocity_y1 = impulse_y1 / mass1;
         float velocity_y2 = impulse_y2 / mass2;
 
-        //vec pos1 = vec_sum(a->pos, vec_mul(vec_norm((vec){ velocity_x1, velocity_y1 }), a->size));
-        //vec pos2 = vec_sum(a->pos, vec_mul(vec_norm((vec){ velocity_x2, velocity_y2 }), a->size));
-        vec pos1 = vec_sum(a->pos, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
-        vec pos2 = vec_sum(a->pos, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
+        vec pos1 = vec_sum(a->position_current, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
+        vec pos2 = vec_sum(a->position_current, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
 
         map_push_asteroid(&map, asteroid_new(pos1, (vec){ velocity_x1, velocity_y1 }, (vec){ 0, 0 }, size1, a->strong));
         map_push_asteroid(&map, asteroid_new(pos2, (vec){ velocity_x2, velocity_y2 }, (vec){ 0, 0 }, size2, a->strong));
@@ -453,7 +451,7 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
     for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL;)
     {
         Asteroid* a = (Asteroid*)i->data;
-        if (vec_distance(b->pos, a->pos) <= a->size)
+        if (vec_distance(b->pos, a->position_current) <= a->size)
         {
             a->damaged = 1;
             a->health -= bullet_damage;
@@ -496,22 +494,27 @@ static void iterate_cells_logic()
                     a_data->moved = 0;
                     continue;
                 }
-                a_data->pos = vec_sum(a_data->pos, a_data->velocity);
-                a_data->velocity = vec_sum(a_data->velocity, a_data->acceleration);
-                a_data->angle += a_data->rotation_speed;
+                //a_data->pos = vec_sum(a_data->pos, a_data->velocity);
+                //a_data->velocity = vec_sum(a_data->velocity, a_data->acceleration);
+                //a_data->angle += a_data->rotation_speed;
 
-                if (a_data->pos.x < map.corner00_pos.x + border_width_cells * map.cell_size)
-                    a_data->velocity.x += border_pushing;
-                if (a_data->pos.y < map.corner00_pos.y + border_width_cells * map.cell_size)
-                    a_data->velocity.y += border_pushing;
-                if (a_data->pos.x > map.corner11_pos.x - border_width_cells * map.cell_size)
-                    a_data->velocity.x -= border_pushing;
-                if (a_data->pos.y > map.corner11_pos.y - border_width_cells * map.cell_size)
-                    a_data->velocity.y -= border_pushing;
+                if (a_data->position_current.x < map.corner00_pos.x + border_width_cells * map.cell_size)
+                    a_data->acceleration.x += border_pushing;
+                if (a_data->position_current.y < map.corner00_pos.y + border_width_cells * map.cell_size)
+                    a_data->acceleration.y += border_pushing;
+                if (a_data->position_current.x > map.corner11_pos.x - border_width_cells * map.cell_size)
+                    a_data->acceleration.x -= border_pushing;
+                if (a_data->position_current.y > map.corner11_pos.y - border_width_cells * map.cell_size)
+                    a_data->acceleration.y -= border_pushing;
+                
+                vec velocity = asteroid_velocity(a_data);
+                a_data->position_old = a_data->position_current;
+                a_data->position_current = vec_sum(a_data->position_current, vec_sum(velocity, a_data->acceleration)); 
+                a_data->acceleration = (vec){ 0, 0 };
 
-                int32 c_x = a_data->pos.x - map.corner00_pos.x;
+                int32 c_x = a_data->position_current.x - map.corner00_pos.x;
                 c_x /= map.cell_size;
-                int32 c_y = a_data->pos.y - map.corner00_pos.y;
+                int32 c_y = a_data->position_current.y - map.corner00_pos.y;
                 c_y /= map.cell_size;
                 if (c_x != cell_x || c_y != cell_y)
                 {

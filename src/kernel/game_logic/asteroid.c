@@ -16,8 +16,8 @@ void asteroid_delete(Asteroid* this)
 
 void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleration, uint16 size, uint8 strong)
 {
-    this->pos = pos;
-    this->velocity = velocity;
+    this->position_current = pos;
+    this->position_old = vec_sub(pos, velocity);
     this->acceleration = acceleration;
     this->strong = strong;
     this->size = size;
@@ -53,4 +53,9 @@ void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleratio
 void asteroid_destructor(Asteroid* this)
 {
     free(this->verticies);
+}
+
+vec asteroid_velocity(Asteroid* this)
+{
+    return vec_sub(this->position_current, this->position_old);
 }

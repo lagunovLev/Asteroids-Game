@@ -5,7 +5,8 @@
 4) Установи make
 5) Установи nasm
 6) Установи qemu
-7) В папке проекта в консоли выполни команду "make"
+7) Установи ld
+8) В папке проекта в консоли выполни команду "make"
 
 How to build it:
 1) Install wsl
@@ -14,4 +15,5 @@ How to build it:
 4) Install make
 5) Install nasm
 6) Install qemu
-7) In root directory run "make" in console
+7) Install ld
+8) In root directory run "make" in console

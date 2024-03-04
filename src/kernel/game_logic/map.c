@@ -61,14 +61,7 @@ void map_destructor(Map* this)
 
 void map_push_asteroid(Map* this, Asteroid* asteroid)
 {
-    //if (asteroid->pos.x < this->corner00_pos.x || asteroid->pos.x >= this->corner11_pos.x || 
-    //    asteroid->pos.y < this->corner00_pos.y || asteroid->pos.y >= this->corner11_pos.y)
-    //{
-    //    asteroid_delete(asteroid);
-    //    return;
-    //}
-
-    ivec pos = { asteroid->pos.x, asteroid->pos.y };
+    ivec pos = { asteroid->position_current.x, asteroid->position_current.y };
     pos = ivec_sub(pos, this->corner00_pos);
     pos = ivec_div(pos, this->cell_size);
     list_push_back(&this->cells[pos.x][pos.y].asteroids, asteroid);
@@ -79,9 +72,7 @@ uint8 map_push_bullet(Map* this, Bullet* bullet)
     if (bullet->pos.x < this->corner00_pos.x || bullet->pos.x >= this->corner11_pos.x || 
         bullet->pos.y < this->corner00_pos.y || bullet->pos.y >= this->corner11_pos.y)
     {
-        //dbg_printf("Start deleting bullet\n");
         bullet_delete(bullet);
-        //dbg_printf("End deleting bullet\n");
         return 0;
     }
 

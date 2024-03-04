@@ -3,8 +3,8 @@
 #include "../util/vec.h"
 
 typedef struct {
-    vec pos;
-    vec velocity;
+    vec position_current;
+    vec position_old;
     vec acceleration;
     float rotation_angle;
     float speed;
@@ -13,3 +13,4 @@ typedef struct {
 extern Player player;
 
 void player_constructor(vec pos, vec velocity, vec acceleration, float rotation_angle, float speed);
+vec player_velocity(Player* this);
