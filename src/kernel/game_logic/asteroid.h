@@ -17,6 +17,7 @@ typedef struct {
     float angle;
     float rotation_speed;
     uint8 strong;
+    uint8 moved;
 } Asteroid;
 
 Asteroid* asteroid_new(vec pos, vec velocity, vec acceleration, uint16 size, uint8 strong);

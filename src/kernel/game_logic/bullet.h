@@ -6,6 +6,7 @@ typedef struct {
     vec pos;
     vec velocity;
     vec acceleration;
+    uint8 moved;
 } Bullet;
 
 Bullet* bullet_new(vec pos, vec velocity, vec acceleration);

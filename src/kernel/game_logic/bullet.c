@@ -15,6 +15,7 @@ void bullet_constructor(Bullet* this, vec pos, vec velocity, vec acceleration) {
     this->pos = pos;
     this->velocity = velocity;
     this->acceleration = acceleration;
+    this->moved = 0;
 }
 
 void bullet_destructor(Bullet* this) {

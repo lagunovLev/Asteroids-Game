@@ -484,15 +484,18 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
 
 static void iterate_cells_logic()
 {
-    dbg_printf("Start cells logic\n");
     for (int cell_x = 0; cell_x < map.side_size; cell_x++)
     {
         for (int cell_y = 0; cell_y < map.side_size; cell_y++)
         {
-            //dbg_printf("A %d %d ", cell_x, cell_y);
             for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL;)
             {
                 Asteroid* a_data = (Asteroid*)i->data;
+                if (a_data->moved)
+                {
+                    a_data->moved = 0;
+                    continue;
+                }
                 a_data->pos = vec_sum(a_data->pos, a_data->velocity);
                 a_data->velocity = vec_sum(a_data->velocity, a_data->acceleration);
                 a_data->angle += a_data->rotation_speed;
@@ -512,12 +515,11 @@ static void iterate_cells_logic()
                 c_y /= map.cell_size;
                 if (c_x != cell_x || c_y != cell_y)
                 {
-                    dbg_printf("Moving asteroid\n");
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].asteroids, i);
                     map_push_asteroid(&map, a_data);
+                    a_data->moved = 1;
                     i = i_next;
-                    dbg_printf("Asteroid moved\n");
                 }
                 else i = i->next;
             }
@@ -525,6 +527,11 @@ static void iterate_cells_logic()
             for (list_elem* i = map.cells[cell_x][cell_y].bullets.begin; i != NULL;)
             {
                 Bullet* b = i->data;
+                if (b->moved)
+                {
+                    b->moved = 0;
+                    continue;
+                }
                 b->pos = vec_sum(b->pos, b->velocity);
                 b->velocity = vec_sum(b->velocity, b->acceleration);
 
@@ -564,12 +571,10 @@ static void iterate_cells_logic()
 
                 if (collided)
                 {
-                    dbg_printf("Bullet collision start\n");
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
                     bullet_delete(b);
                     i = i_next;
-                    dbg_printf("Bullet collision end\n");
                     continue;
                 }
 
@@ -587,19 +592,17 @@ static void iterate_cells_logic()
                 }
                 if (c_x != cell_x || c_y != cell_y)
                 {
-                    dbg_printf("Moving bullet\n");
                     list_elem* i_next = i->next;
                     list_remove_by_elem(&map.cells[cell_x][cell_y].bullets, i);
                     uint8 pushed = map_push_bullet(&map, b);
+                    b->moved = 1;
                     i = i_next;
-                    dbg_printf("bullet moved\n");
                 }
                 else i = i->next;
             }
             //dbg_printf("E  ");
         }
     }
-    dbg_printf("End cells logic\n");
 } 
 
 static void display_ui()
