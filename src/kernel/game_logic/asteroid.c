@@ -47,6 +47,7 @@ void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleratio
     this->health = 2.5 * this->size * this->size;
     if (this->strong)
         this->health *= 2;
+    this->moved = 0;
 }
 
 void asteroid_destructor(Asteroid* this)
