@@ -59,7 +59,7 @@ static void init_values()
     shoot_cooldown = 8;
     reloading = 0;
     strong_asteroid_chance = 0;
-    bullet_speed = 2.5;
+    bullet_speed = 3;
     bullet_damage = 100;
     asteroid_min_volume = asteroid_min_size * asteroid_min_size * PI;
 
@@ -625,7 +625,7 @@ static void display_ui()
 void game_init() {
     dbg_printf("Game init\n");
     init_values();
-    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.026); 
+    player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.027); 
     map_constructor(&map, (ivec){ 0, 0 }, 60, 30);
     init_stars();
 
