@@ -25,3 +25,4 @@ void asteroid_delete(Asteroid* this);
 void asteroid_constructor(Asteroid* this, vec pos, vec velocity, vec acceleration, uint16 size, uint8 strong);
 void asteroid_destructor(Asteroid* this);
 vec asteroid_velocity(Asteroid* this);
+float asteroid_mass(Asteroid* this);
