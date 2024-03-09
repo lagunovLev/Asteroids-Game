@@ -3,6 +3,9 @@
 #include "drivers/keyboard.h"
 
 List pages;
+volatile char* current_msg = 0;
+uint16 msg_i = 0;
+uint8 new_line = 0;
 
 void init_debug()
 {
@@ -11,6 +14,26 @@ void init_debug()
     for (int i = 0; i < PAGE_WIDTH; i++)
         memset(page->text[i], 0, PAGE_HEIGHT);
     list_push_back(&pages, page);
+    current_msg = malloc(PAGE_WIDTH);
+    clear_msg();
+}
+
+void clear_msg()
+{
+    msg_i = 0;
+    memset(current_msg, ' ', PAGE_WIDTH);
+    current_msg[PAGE_WIDTH - 1] = '\0';
+}
+
+void write_msg(char ch)
+{
+    if (msg_i >= PAGE_WIDTH - 2 || new_line)
+    {
+        clear_msg();
+        new_line = 0;
+    }
+    current_msg[msg_i] = ch;
+    msg_i++;
 }
 
 void delete_page(TextPage* page)
@@ -21,6 +44,7 @@ void delete_page(TextPage* page)
 void destruct_debug()
 {
     list_destructor(&pages, delete_page);
+    free(current_msg);
 }
 
 void view_logs(uint8 start)
@@ -83,6 +107,10 @@ inline void dbg_putc(char c)
     static uint8 x = 0;
     static uint8 y = 0;
     outb(0xE9, c);
+    if (c == "\n")
+        new_line = 1;
+    else
+        write_msg(c);
     if (c == '\n')
     {
         x = 0;
@@ -92,6 +120,7 @@ inline void dbg_putc(char c)
     if (c == '\t')
     {
         x += 4;
+        msg_i += 4;
         return;
     }
     if (x >= PAGE_WIDTH)

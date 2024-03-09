@@ -261,12 +261,16 @@ static void player_input()
         reloading = 1;
         shoot();
     }
+    if (key_press(SC_ENTER))
+        dbg_printf("Enter pressed!\n");
 }
 
 static void check_player_collisions(int32 cell_x, int32 cell_y)
 {
+    //dbg_printf("func check_player_collisions start\n");
     for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
     {
+        dbg_puts("pc");
         Asteroid* a = i->data;
         float distance = vec_distance(a->position_current, player.position_current);
         if (distance < player_size / 2 + a->size)
@@ -292,10 +296,12 @@ static void check_player_collisions(int32 cell_x, int32 cell_y)
             a->position_current = vec_sub(a->position_current, vec_mul(n, mul1 * delta));
         }
     }
+    //dbg_printf("func check_player_collisions end\n");
 }
 
 static void collide_asteroids(Asteroid* a1, Asteroid* a2, float distance)
 {
+    //dbg_printf("func collide_asteroids start\n");
     vec axis = vec_sub(a1->position_current, a2->position_current);
     vec n = vec_norm(axis);
     float delta = a1->size + a2->size - distance;
@@ -305,12 +311,15 @@ static void collide_asteroids(Asteroid* a1, Asteroid* a2, float distance)
     float mul2 = asteroid_mass(a1) * asteroid_mass_mul / whole_mass * collide_strength;
     a1->position_current = vec_sum(a1->position_current, vec_mul(n, mul1 * delta));
     a2->position_current = vec_sub(a2->position_current, vec_mul(n, mul2 * delta));
+    //dbg_printf("func collide_asteroids end\n");
 }
 
 static void collide_asteroid(Asteroid* a_main, int32 cell_x, int32 cell_y)
 {
+    //dbg_printf("func collide_asteroid start\n");
     for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
     {
+        dbg_puts("ac");
         Asteroid* a = i->data;
         if (a == a_main)
             continue;
@@ -318,10 +327,12 @@ static void collide_asteroid(Asteroid* a_main, int32 cell_x, int32 cell_y)
         if (distance < a_main->size + a->size)
             collide_asteroids(a_main, a, distance);
     }
+    //dbg_printf("func collide_asteroid end\n");
 }
 
 static void player_logic()
 {
+    //dbg_printf("func player_logic start\n");
     if (player.position_current.x < map.corner00_pos.x + border_width_cells * map.cell_size)
         player.acceleration.x += border_pushing;
     if (player.position_current.y < map.corner00_pos.y + border_width_cells * map.cell_size)
@@ -377,10 +388,12 @@ static void player_logic()
     camera_pos.y = dmax(camera_pos.y, map.corner00_pos.y + border_width_cells * map.cell_size);
     camera_pos.x = dmin(camera_pos.x, map.corner11_pos.x - border_width_cells * map.cell_size - (int32)screen_width);
     camera_pos.y = dmin(camera_pos.y, map.corner11_pos.y - border_width_cells * map.cell_size - (int32)screen_height);
+    //dbg_printf("func player_logic end\n");
 }
 
 static void player_graphics()
 {
+    dbg_puts("pg");
     vec player_pos = vec_sub(player.position_current, camera_pos);
     double t = 2.09;
     vec point1 = vec_sum(player_pos, (vec){ cos(player.rotation_angle) * player_size, sin(player.rotation_angle) * player_size });
@@ -403,6 +416,7 @@ static void iterate_cells_graphics()
         {
             for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL; i = i->next)
             {
+                dbg_puts("ga");
                 Asteroid* a_data = (Asteroid*)i->data;
                 uint8 color;
                 if (a_data->damaged)
@@ -418,6 +432,7 @@ static void iterate_cells_graphics()
                 if (!isInCamera(a_data->position_current, a_data->size * ASTEROID_SIZE_MAX))
                     continue;
 
+                dbg_puts("ga2");
                 float step = 2 * PI / a_data->verticies_count;
                 vec vert_temp_pos = { cos(a_data->angle) * a_data->verticies[0], sin(a_data->angle) * a_data->verticies[0] };
                 vert_temp_pos = vec_sum(a_data->position_current, vert_temp_pos);
@@ -445,6 +460,7 @@ static void iterate_cells_graphics()
 
 static void destroy_asteroid(Asteroid* a)
 {
+    //dbg_printf("func destroy_asteroid start\n");
     float volume = a->size * a->size * PI;
     volume *= 0.8;
     float mass = volume;
@@ -470,22 +486,53 @@ static void destroy_asteroid(Asteroid* a)
         float impulse_x = velocity.x * mass; 
         float impulse_y = velocity.y * mass;
 
-        float impulse_x1 = rand_float(impulse_x / 4, impulse_x);
-        float impulse_y1 = rand_float(impulse_y / 4, impulse_y);
-        float impulse_x2 = impulse_x - impulse_x1;
-        float impulse_y2 = impulse_y - impulse_y1;
+        float angle = rand_float(0, 2 * PI);
+
+        float impulse_x1 = cos(angle) * 100 + 0.5 * impulse_x;
+        float impulse_y1 = sin(angle) * 100 + 0.5 * impulse_y;
+        float impulse_x2 = cos(-angle) * 100 + 0.5 * impulse_x;
+        float impulse_y2 = sin(-angle) * 100 + 0.5 * impulse_y;
+
+        //if (impulse_x1 > 500)
+        //{
+        //    impulse_x1 -= 100;
+        //    impulse_x2 += 100;
+        //}
+        //if (impulse_x2 > 500)
+        //{
+        //    impulse_x2 -= 100;
+        //    impulse_x1 += 100;
+        //}
+        //if (impulse_y1 > 500)
+        //{
+        //    impulse_y1 -= 100;
+        //    impulse_y2 += 100;
+        //}
+        //if (impulse_y2 > 500)
+        //{
+        //    impulse_y2 -= 100;
+        //    impulse_y1 += 100;
+        //}
 
         float velocity_x1 = impulse_x1 / mass1;
         float velocity_x2 = impulse_x2 / mass2;
         float velocity_y1 = impulse_y1 / mass1;
         float velocity_y2 = impulse_y2 / mass2;
 
-        vec pos1 = vec_sum(a->position_current, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
-        vec pos2 = vec_sum(a->position_current, (vec){ rand_float(-6, 6), rand_float(-6, 6) });
+        float delta = size1 + size2 / 2;
+        delta *= 1.2;
+        float delta_x_1 = cos(angle) * delta;
+        float delta_y_1 = sin(angle) * delta;
+        float delta_x_2 = cos(-angle) * delta;
+        float delta_y_2 = sin(-angle) * delta;
+
+        vec pos1 = vec_sum(a->position_current, (vec){ delta_x_1, delta_y_1 });
+        vec pos2 = vec_sum(a->position_current, (vec){ delta_x_2, delta_y_2 });
 
         map_push_asteroid(&map, asteroid_new(pos1, (vec){ velocity_x1, velocity_y1 }, (vec){ 0, 0 }, size1, a->strong));
         map_push_asteroid(&map, asteroid_new(pos2, (vec){ velocity_x2, velocity_y2 }, (vec){ 0, 0 }, size2, a->strong));
     }
+    //dbg_printf("func destroy_asteroid end\n");
 }
 
 static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
@@ -493,6 +540,7 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
     uint8 collided = 0;
     for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL;)
     {
+        dbg_puts("bc");
         Asteroid* a = (Asteroid*)i->data;
         if (vec_distance(b->pos, a->position_current) <= a->size)
         {
@@ -525,12 +573,14 @@ static uint8 bullet_check_collisions(int32 cell_x, int32 cell_y, Bullet* b)
 
 static void iterate_cells_logic()
 {
+    //dbg_printf("func iterate_cells_logic start\n");
     for (int cell_x = 0; cell_x < map.side_size; cell_x++)
     {
         for (int cell_y = 0; cell_y < map.side_size; cell_y++)
         {
             for (list_elem* i = map.cells[cell_x][cell_y].asteroids.begin; i != NULL;)
             {
+                dbg_putc('a');
                 Asteroid* a_data = (Asteroid*)i->data;
                 if (a_data->moved)
                 {
@@ -602,6 +652,7 @@ static void iterate_cells_logic()
             }
             for (list_elem* i = map.cells[cell_x][cell_y].bullets.begin; i != NULL;)
             {
+                dbg_putc('b');
                 Bullet* b = i->data;
                 if (b->moved)
                 {
@@ -678,17 +729,25 @@ static void iterate_cells_logic()
             }
         }
     }
+    //dbg_printf("func iterate_cells_logic end\n");
 } 
 
 static void display_ui()
 {
+    dbg_putc('d');
     putString(1, 1, ui_color, "Score: %d", score);
+    dbg_putc('e');
+    //current_msg[PAGE_WIDTH-1] = '\0';
+    //putString(1, 192, ui_color, "%s", current_msg);
+    dbg_putc('h');
     if (player_health > 0)
     {
         int16 start_x = screen_width - (heart_size_x + 1) * player_health;
         for (int i = 0; i < player_health; i++)
         {
+            dbg_puts("h2");
             put_heart(start_x, 1, ui_color);
+            dbg_puts("h3");
             start_x += heart_size_x + 1;
         }
     }
@@ -724,6 +783,7 @@ void game_graphics() {
     iterate_cells_graphics();
     player_graphics();
     display_ui();
+    dbg_puts("d2");
 }
 
 struct Scene game_destruct() {

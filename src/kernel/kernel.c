@@ -22,12 +22,12 @@ void kmain()
     idt_install();
     isrs_install();
     irq_install();
+    srand(trand());
     malloc_init();
     set_timer_callback(timer_callback);
     init_timer(50);
     set_keyboard_callback(kb_callback);
     init_keyboard();
-    srand(trand());
     init_debug();
     asm volatile("sti");
 

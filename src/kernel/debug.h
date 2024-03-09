@@ -9,6 +9,12 @@
 #define PAGE_WIDTH 40
 #define PAGE_HEIGHT 23
 
+extern volatile char* current_msg;
+extern uint16 msg_i;
+
+void clear_msg();
+void write_msg(char ch);
+
 typedef struct TextPage
 {
     char text[PAGE_WIDTH][PAGE_HEIGHT];
