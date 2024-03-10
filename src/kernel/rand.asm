@@ -19,7 +19,7 @@ trand:
     jc .done      ; carry flag is set on success
     loop .retry
 .fail:
-    mov eax, 1488
+    mov eax, 1488  ; Пасхалка
 .done:
 
     pop  ebp

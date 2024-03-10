@@ -243,8 +243,26 @@ static unsigned long int next = 0;
 
 uint32 rand()
 {
-    next = next * 1103515245 + 12345;
-    return next;
+    unsigned int next2 = next;
+    int result;
+
+    next2 *= 1103515245;
+    next2 += 12345;
+    result = (unsigned int) (next2 / 65536) % 2048;
+
+    next2 *= 1103515245;
+    next2 += 12345;
+    result <<= 10;
+    result ^= (unsigned int) (next2 / 65536) % 1024;
+
+    next2 *= 1103515245;
+    next2 += 12345;
+    result <<= 10;
+    result ^= (unsigned int) (next2 / 65536) % 1024;
+
+    next = next2;
+
+    return result;
 }
 
 void srand(uint32 seed)
@@ -259,7 +277,10 @@ float rand_float(float f1, float f2)
 
 uint32 rand_int(uint32 a, uint32 b)
 {
-    return a + rand() % (b - a + 1); 
+    uint32 r = rand();
+    uint32 res = a + r % (b - a + 1);
+    //dbg_printf("%d %d %d %d\n", a, b, r, res);
+    return res; 
 }
 
 
