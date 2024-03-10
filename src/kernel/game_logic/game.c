@@ -49,7 +49,7 @@ static void init_values()
     asteroid_spawn_time = 140; 
     border_pushing = 0.09f;
     border_width_cells = 2;
-    asteroid_min_size = 6;
+    asteroid_min_size = 7;
     asteroid_max_size = 18;
     player_health = 3;
     player_size = 6;
@@ -78,7 +78,7 @@ static void init_values()
 
 static void increase_difficulty5()
 {
-    asteroid_spawn_time = 80;
+    asteroid_spawn_time = 70;
     strong_asteroid_chance = 1;
     dbg_printf("Increased difficulty!\n");
 }
