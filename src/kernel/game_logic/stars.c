@@ -11,7 +11,7 @@ void init_stars()
     for (uint32 i = 0; i < screen_width * screen_height; i++)
     {
         uint8 r = rand_int(0, 360);
-        uint8 r2 = rand_int(0, 3);
+        uint8 r2 = rand_int(0, 2);
         //dbg_printf("%d ", r2);
         uint8 color = 0;
         if (r2 == 0)
