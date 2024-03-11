@@ -9,6 +9,7 @@
 #include "game_logic/game.h"
 #include "game_logic/scene.h"
 #include "game_logic/menu.h"
+#include "debug.h"
 
 static void timer_callback();
 static void kb_callback(uint8 scancode, char* ascii, uint8 released);
@@ -52,9 +53,12 @@ void kmain()
             update_key_flags();
             scene.logic();
             scene.graphics();
+            //dbg_puts("d3");
             flip();
+            //dbg_puts("d4");
             uint32 end_tick = tick;
             calculate_delay(1, start_tick, end_tick);
+            //dbg_puts("d5");
         }
         scene = scene.destruct();
         run_current_scene = 1;
@@ -70,10 +74,14 @@ void kmain()
 
 static void calculate_delay(uint32 delay, uint32 start_tick, uint32 end_tick)
 {
+    //dbg_puts("z1");
     if (end_tick - start_tick < delay)
     {
+        //dbg_puts("z2");
         uint32 time_last = end_tick - start_tick;
+        //dbg_puts("z3");
         wait(delay - time_last);
+        //dbg_puts("z4");
     }
 }
 

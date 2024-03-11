@@ -47,8 +47,8 @@ int32 increase_difficulty_time5;
 static void init_values()
 {
     asteroid_spawn_time = 140; 
-    border_pushing = 0.09f;
-    border_width_cells = 2;
+    border_pushing = 0.1f;
+    border_width_cells = 5;
     asteroid_min_size = 7;
     asteroid_max_size = 18;
     player_health = 3;
@@ -462,7 +462,7 @@ static void destroy_asteroid(Asteroid* a)
 {
     //dbg_printf("func destroy_asteroid start\n");
     float volume = a->size * a->size * PI;
-    volume *= 0.8;
+    volume *= 0.9;
     float mass = volume;
     if (a->strong)
         mass *= 2;
@@ -599,6 +599,11 @@ static void iterate_cells_logic()
                     a_data->acceleration.y -= border_pushing;
                 
                 vec velocity = asteroid_velocity(a_data);
+                if (vec_length(velocity) > 4)
+                {
+                    vec g = vec_norm(velocity);
+                    velocity = vec_mul(g, 4);
+                }
                 a_data->position_old = a_data->position_current;
                 a_data->position_current = vec_sum(a_data->position_current, vec_sum(velocity, a_data->acceleration)); 
                 a_data->acceleration = (vec){ 0, 0 };
@@ -736,9 +741,6 @@ static void display_ui()
 {
     dbg_putc('d');
     putString(1, 1, ui_color, "Score: %d", score);
-    dbg_putc('e');
-    //current_msg[PAGE_WIDTH-1] = '\0';
-    //putString(1, 192, ui_color, "%s", current_msg);
     dbg_putc('h');
     if (player_health > 0)
     {
@@ -757,7 +759,7 @@ void game_init() {
     dbg_printf("Game init\n");
     init_values();
     player_constructor((vec){ 0, 0 }, (vec){ 0, 0 }, (vec) { 0, 0 }, 0, 0.027); 
-    map_constructor(&map, (ivec){ 0, 0 }, 60, 30);
+    map_constructor(&map, (ivec){ 0, 0 }, 60, 35);
     init_stars();
 
     add_event(spawn_asteroids, asteroid_spawn_time);

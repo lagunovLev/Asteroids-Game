@@ -91,9 +91,10 @@ void wait(uint32 ticks)
     uint32 start_tick = tick;
     while (1)
     {
+        //dbg_putc('n');
         if (tick - start_tick >= ticks)
             return;
-        if (tick >= 4294967295 - 20)
+        if (tick >= 4294967295 - 30)
         {
             uint32 diff = tick - start_tick;
             start_tick = 0;

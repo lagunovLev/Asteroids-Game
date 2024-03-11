@@ -24,6 +24,18 @@ void drawFillRect(int16 x, int16 y, uint16 width, uint16 height, uint8 color)
     }
 }
 
+void drawFillRectDirect(int16 x, int16 y, uint16 width, uint16 height, uint8 color)
+{
+    for (uint16 i = y; i < y + height; i++)
+    {
+        int32 offset = i * screen_width;
+        for (uint16 j = x; j < x + width; j++)
+        {
+            *((uint8*)video_memory + offset + j) = color;
+        }
+    }
+}
+
 void drawFillCircle(int16 x, int16 y, uint16 r, uint8 color)
 {
     for (int i = -r; i <= r; i++)
@@ -125,12 +137,35 @@ static inline void drawCharLayer(int32 offset, char layer, uint8 color)
     }
 }
 
+static inline void drawCharLayerDirect(int32 offset, char layer, uint8 color)
+{
+    offset += char_width;
+    for (uint8 i = 0; i < char_width; i++)
+    {
+        if (layer % 2)
+            *((uint8*)video_memory + offset) = color;
+        layer >>= 1;
+        offset--;
+    }
+}
+
 static void printChar(int32 offset, char ch, uint8 color)
 {
     uint16 char_start = ch * char_height;
     for (uint8 i = 0; i < char_height; i++)
     {
         drawCharLayer(offset, ((char*)font)[char_start], color);
+        char_start++;
+        offset += screen_width;
+    }
+} 
+
+static void printCharDirect(int32 offset, char ch, uint8 color)
+{
+    uint16 char_start = ch * char_height;
+    for (uint8 i = 0; i < char_height; i++)
+    {
+        drawCharLayerDirect(offset, ((char*)font)[char_start], color);
         char_start++;
         offset += screen_width;
     }
@@ -169,6 +204,30 @@ static void printString(int32* str_offset, uint8 color, char* string)
     }
 }
 
+static void printStringDirect(int32* str_offset, uint8 color, char* string)
+{
+    for (uint16 i = 0; string[i]; i++)
+    {
+        if (string[i] == '\n')
+        {
+            *str_offset += (char_height + 1) * screen_width;
+        } 
+        else if (string[i] == '\t')
+        {
+            *str_offset += char_width * 4;
+        }
+        else if (string[i] == '\r')
+        {
+            *str_offset -= *str_offset % screen_width;
+        }
+        else 
+        {
+            printCharDirect(*str_offset, string[i], color);
+            *str_offset += char_width;
+        }
+    }
+}
+
 void putString(int16 x, int16 y, uint8 color, char* string, ...)
 {
     int32 str_offset = x + y * screen_width;
@@ -180,8 +239,27 @@ void putString(int16 x, int16 y, uint8 color, char* string, ...)
     va_end(arg_ptr);
 }
 
+void putStringDirect(int16 x, int16 y, uint8 color, char* string, ...)
+{
+    int32 str_offset = x + y * screen_width;
+    va_list arg_ptr;
+    va_start(arg_ptr, string);
+    char buf[256] = { 0 };
+    vsprintf(buf, string, arg_ptr);
+    printStringDirect(&str_offset, color, buf);
+    va_end(arg_ptr);
+}
+
 void flip()
 {
+    //dbg_puts("j1");
     vsync_wait();
+    //dbg_puts("j2");
+    //memcpy(0xA0000, 0x100000, 64000); 
     memcpy(video_memory, double_buffer, screen_height * screen_width);
+    //for (uint32 i = 0; i < 64000; i++)
+    //{
+    //    *((uint8*)0xA0000 + i) = *((uint8*)0x100000 + i);
+    //}
+    //dbg_puts("j3");
 }

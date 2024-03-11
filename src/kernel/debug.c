@@ -34,6 +34,10 @@ void write_msg(char ch)
     }
     current_msg[msg_i] = ch;
     msg_i++;
+
+    current_msg[PAGE_WIDTH-1] = '\0';
+    drawFillRectDirect(1, 192, 318, 7, 0x00);
+    putStringDirect(1, 192, 0x02, "%s", current_msg);
 }
 
 void delete_page(TextPage* page)
