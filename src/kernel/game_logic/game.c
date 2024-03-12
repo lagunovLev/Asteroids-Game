@@ -599,10 +599,10 @@ static void iterate_cells_logic()
                     a_data->acceleration.y -= border_pushing;
                 
                 vec velocity = asteroid_velocity(a_data);
-                if (vec_length(velocity) > 3)
+                if (vec_length(velocity) > 4)
                 {
                     vec g = vec_norm(velocity);
-                    velocity = vec_mul(g, 3);
+                    velocity = vec_mul(g, 4);
                 }
                 a_data->position_old = a_data->position_current;
                 a_data->position_current = vec_sum(a_data->position_current, vec_sum(velocity, a_data->acceleration)); 
